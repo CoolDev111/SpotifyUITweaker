@@ -67,7 +67,7 @@ themed consistently.
 
 Edge/Brave work the same (`edge://extensions`, `brave://extensions`).
 Step-by-step details, updates-preserving-presets and troubleshooting:
-[`SpotifyUITweaker%20-%20Extension/INSTALL.md`](SpotifyUITweaker%20-%20Extension/INSTALL.md).
+[`SpotifyUITweaker - Extension/INSTALL.md`](SpotifyUITweaker%20-%20Extension/INSTALL.md).
 
 ## Install — Spotify desktop client
 
