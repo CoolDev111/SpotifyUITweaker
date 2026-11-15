@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "_comment": "Index of theme presets in this folder. The popup reads this file to list presets (a real directory scan is only possible for unpacked Chrome installs). Paths are relative to the extension root. To publish a new theme: drop theme-name.css in this folder and add its path below. Adaptive Album Glass needs the @msc-adaptive-album marker (kept in the file header) — content.js then samples the album art and re-tints the accents live.",
+  "presets": [
+    "themes/theme-adaptive-album.css",
+    "themes/theme-frosted-glass.css",
+    "themes/theme-neon-glass.css",
+    "themes/theme-violet-nebula.css",
+    "themes/theme-amber-ember.css"
+  ]
+}

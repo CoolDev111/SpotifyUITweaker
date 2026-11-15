@@ -1,7 +1,7 @@
 # Spotify UI Tweaker — Installation Guide (Google Chrome)
 
-**Version 1.5.6** · Manifest V3 · for `https://open.spotify.com` · plus a
-desktop-client injector
+**Version 1.5.6** · Manifest V3 · for `https://open.spotify.com` · plus
+desktop-client launcher packages for Windows & macOS
 
 A Chrome extension that re-themes Spotify's **web player** with custom CSS:
 five bundled themes (including one that adapts to the album art), a Themes
@@ -40,9 +40,13 @@ client injection" further down.
 | `popup.html` / `popup.js` | The toolbar popup (themes, presets, palette, editor, diagnostics) |
 | `themes/` | Five bundled theme presets + index |
 | `images/` | Toolbar/store icons |
-| `main.py` | Desktop-client injector (Python) |
-| `build.bat` | Builds the injector into a standalone `SpotifyUITweaker.exe` |
 | `INSTALL.md` | This guide |
+
+The desktop-client injector ships in its own ready-to-run packages:
+**`SpotifyUITweaker - Windows`** and **`SpotifyUITweaker - Mac`** — each
+contains `main.py`, a platform build script, its own README and copies of
+every extension file above, so this folder stays a clean, pure Chrome
+extension.
 
 ---
 
@@ -153,33 +157,62 @@ restarts and extension reloads.
 
 ---
 
-## Desktop client injection (Spotify.exe)
+## Desktop client injection (Windows & macOS)
 
-`main.py` loads the **same themes and the same popup GUI into the Spotify
-desktop client** — no Chromium wrapper involved:
+The launcher packages load the **same themes and the same popup GUI into the
+Spotify desktop client** — no browser needed. The `main.py` in both packages
+is identical and cross-platform: it auto-detects the OS, finds Spotify in
+the standard install location and uses the right process commands.
 
-1. **Requirements:** Python 3 with `pip install websockets pyinstaller`.
-2. **Run it:** `python main.py` next to the extension files. It closes
-   Spotify, relaunches it with remote debugging on `127.0.0.1:9222`,
-   attaches over the DevTools protocol and injects the whole extension
-   (content script + popup + themes).
-3. **Standalone exe:** run `build.bat` — it produces
+### Windows — `SpotifyUITweaker - Windows`
+
+1. **Requirements:** Python 3 from [python.org](https://www.python.org/downloads/)
+   (tick "Add python.exe to PATH") with `pip install websockets`.
+2. **Run it:** double-click `main.py` or run `python main.py` inside the
+   package. It closes Spotify, relaunches it with remote debugging on
+   `127.0.0.1:9222`, attaches over the DevTools protocol and injects the
+   whole extension (content script + popup + themes).
+3. **Standalone exe:** double-click `build.bat` — it produces
    `dist\SpotifyUITweaker.exe` with every asset embedded. Launch that and
    `storage.json` is created next to it automatically when you save
    settings.
-4. **Using it:** click the palette button left of the notification bell in
-   Spotify's top bar, or press **Alt+C**. **Ctrl+Shift+D** / **Alt+D**
-   opens DevTools.
+
+### macOS — `SpotifyUITweaker - Mac`
+
+1. **Requirements:** Python 3 ([python.org](https://www.python.org/downloads/)
+   or `xcode-select --install`). The `websockets` dependency is installed
+   for you the first time you run `run.command`.
+2. **Run it:** first time only, allow the scripts to run
+   (`chmod +x run.command build.command`, or right-click → Open), then
+   double-click **`run.command`**. Same flow as Windows: Spotify relaunches
+   with remote debugging on `127.0.0.1:9222` and the extension is injected.
+3. **Standalone app:** double-click `build.command` — it produces
+   `dist/SpotifyUITweaker.app` with every asset embedded (first launch of
+   the unsigned app: right-click → **Open**, or run
+   `xattr -cr dist/SpotifyUITweaker.app`). `storage.json` is created **next
+   to the .app** when you save settings — keep the app in a permanent spot.
+
+### Using it (both platforms)
+
+Click the palette button left of the notification bell in Spotify's top bar,
+or press **Alt+C** (**Option+C** on macOS). **Ctrl+Shift+D** / **Alt+D**
+opens DevTools.
 
 Notes:
 
 - `main.py` bundles every `.css/.js/.html/.json` file next to it — edit
-  themes in the folder and rerun (or rebuild) to pick up changes.
+  themes in the package folder and rerun (or rebuild) to pick up changes.
 - The injector closes Spotify when it exits; close it with Ctrl+C or by
-  closing the console/exe rather than killing the process, to keep things
+  quitting the exe / app rather than killing the process, to keep things
   tidy.
 - The client needs the debug port, so the injector relaunches Spotify on
   every start — that is normal.
+- Don't want to install Python at all? If the repo is on GitHub, the
+  `.github/workflows/build.yml` workflow builds the exe and the .app for
+  you (Actions tab, or automatic Release builds on version tags).
+- Each package folder also doubles as a regular unpacked Chrome extension —
+  it contains `manifest.json`, so you can Load unpacked it directly if you
+  want the web-player version instead.
 
 ---
 
@@ -211,7 +244,7 @@ Import them after reinstalling.
 | Bundled themes missing on the Themes tab | The `themes/` folder must stay next to `manifest.json` — don't move or delete it. |
 | Saved presets disappeared | You loaded the extension from a different folder path (storage follows the folder-derived ID). Load from the original path again, or Import the preset's exported `.css` file. |
 | Album-adaptive colors don't change | Adaptive sampling only runs with **Adaptive Album Glass** (the `@msc-adaptive-album` marker). Pick another theme for a fixed palette. |
-| Client injector: "Spotify.exe not found" | It looks in `%APPDATA%\Spotify\Spotify.exe` — the standard client install location. |
+| Client launcher: "Spotify desktop client not found" | Windows: it looks in `%APPDATA%\Spotify\Spotify.exe`; macOS: `/Applications/Spotify.app`. Custom install? Add your path to `SPOTIFY_CANDIDATES` at the top of `main.py`. |
 | Client injector times out | Close Spotify fully (including the tray), rerun, or check that nothing else occupies port 9222. |
 | Chrome shows a startup notice about developer mode | Expected for unpacked extensions. Dismiss it — the extension keeps working. |
 | Want it gone | `chrome://extensions` → Spotify UI Tweaker → **Remove**. |
@@ -231,6 +264,8 @@ The same steps work in any Chromium browser — just swap the address:
   modify any other website.
 - Stores your theme and presets locally in Chrome (`chrome.storage.local`).
   No remote code, no analytics, nothing leaves your machine. The client
-  injector writes its state to a local `storage.json` next to the exe.
+  launcher writes its state to a local `storage.json` next to the exe /
+  .app.
 - Does **not** work on the Spotify desktop app **via Chrome** — use the
-  `main.py` / `SpotifyUITweaker.exe` injector for that.
+  `SpotifyUITweaker - Windows` / `SpotifyUITweaker - Mac` launcher packages
+  for that.

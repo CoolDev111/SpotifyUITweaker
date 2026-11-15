@@ -3,6 +3,7 @@ import atexit
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -13,23 +14,77 @@ import webbrowser
 
 import websockets
 
+# ---------------------------------------------------------------------------
+# Platform detection
+# ---------------------------------------------------------------------------
+IS_WINDOWS = os.name == "nt"
+IS_MAC = sys.platform == "darwin"
+
 BUNDLE_DIR = getattr(sys, "_MEIPASS", os.path.dirname(os.path.abspath(__file__)))
-APP_DIR = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
+
+
+def _resolve_app_dir():
+    """Directory that holds storage.json.
+
+    Frozen (PyInstaller): next to the executable. On macOS the executable
+    lives inside SpotifyUITweaker.app/Contents/MacOS/, so walk up to the
+    .app's parent folder instead — that keeps storage.json OUTSIDE the
+    bundle, where rebuilding the app won't wipe your saved settings.
+    """
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        if exe_dir.endswith(os.path.join("Contents", "MacOS")):
+            return os.path.dirname(os.path.dirname(os.path.dirname(exe_dir)))
+        return exe_dir
+    return os.path.dirname(os.path.abspath(__file__))
+
+
+APP_DIR = _resolve_app_dir()
 STORAGE_PATH = os.path.join(APP_DIR, "storage.json")
-SPOTIFY_EXE = os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe")
+
+# Standard Spotify desktop client install locations, per platform.
+# Running a portable/custom install? Add its path to this list.
+SPOTIFY_CANDIDATES = (
+    [os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe")]
+    if IS_WINDOWS
+    else [
+        "/Applications/Spotify.app/Contents/MacOS/Spotify",
+        os.path.expanduser("~/Applications/Spotify.app/Contents/MacOS/Spotify"),
+    ]
+)
+
 DEBUG_PORT = 9222
 
+
+def find_spotify():
+    for path in SPOTIFY_CANDIDATES:
+        if os.path.exists(path):
+            return path
+    return None
+
+
+def _quiet(**extra):
+    """Common subprocess kwargs; also hides console windows on Windows."""
+    kwargs = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    if IS_WINDOWS:
+        kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+    kwargs.update(extra)
+    return kwargs
+
+
 def kill_spotify():
-    subprocess.run(
-        ["taskkill", "/F", "/IM", "Spotify.exe"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=0x08000000
-    )
+    if IS_WINDOWS:
+        subprocess.run(["taskkill", "/F", "/IM", "Spotify.exe"], **_quiet())
+    elif IS_MAC:
+        subprocess.run(["killall", "Spotify"], **_quiet())
+    else:
+        subprocess.run(["pkill", "-x", "Spotify"], **_quiet())
+
 
 atexit.register(kill_spotify)
 signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
 signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+
 
 def collect_extension_bundle():
     """Reads all extension HTML, CSS, JS, and theme files into a dictionary."""
@@ -81,20 +136,22 @@ def is_debug_port_open():
         return False
 
 def restart_spotify_with_debug():
-    if not os.path.exists(SPOTIFY_EXE):
-        raise FileNotFoundError(f"Spotify.exe not found at: {SPOTIFY_EXE}")
+    spotify_exe = find_spotify()
+    if not spotify_exe:
+        raise FileNotFoundError(
+            "Spotify desktop client not found. Looked in:\n  "
+            + "\n  ".join(SPOTIFY_CANDIDATES)
+        )
 
     print("[MSC] Closing existing Spotify instances...")
-    subprocess.run(
-        ["taskkill", "/F", "/IM", "Spotify.exe"],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-        creationflags=0x08000000
-    )
+    kill_spotify()
     time.sleep(1.0)
 
     print(f"[MSC] Launching Spotify with --remote-debugging-port={DEBUG_PORT} and --remote-debugging-address=127.0.0.1...")
-    subprocess.Popen([SPOTIFY_EXE, f"--remote-debugging-port={DEBUG_PORT}", "--remote-debugging-address=127.0.0.1"])
+    subprocess.Popen(
+        [spotify_exe, f"--remote-debugging-port={DEBUG_PORT}", "--remote-debugging-address=127.0.0.1"],
+        **_quiet()
+    )
 
 def wait_for_spotify_target(timeout=30):
     deadline = time.time() + timeout
@@ -379,7 +436,7 @@ def build_extension_payload(bundle):
     """
 
 def launch_devtools_window():
-    """Opens the active Spotify DevTools inspector in a standalone Chrome/Edge window."""
+    """Opens the active Spotify DevTools inspector in a standalone browser window."""
     try:
         with urllib.request.urlopen(f"http://localhost:{DEBUG_PORT}/json", timeout=2) as resp:
             targets = json.loads(resp.read().decode("utf-8"))
@@ -390,14 +447,28 @@ def launch_devtools_window():
             ws_part = target["webSocketDebuggerUrl"].replace("ws://", "")
             inspector_url = f"http://localhost:{DEBUG_PORT}/devtools/inspector.html?ws={ws_part}"
 
-            chrome_paths = [
-                os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
-                os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
-                os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
-                os.path.expandvars(r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"),
-                os.path.expandvars(r"%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"),
-            ]
-            browser_exe = next((p for p in chrome_paths if os.path.exists(p)), None)
+            if IS_WINDOWS:
+                browser_candidates = [
+                    os.path.expandvars(r"%ProgramFiles%\Google\Chrome\Application\chrome.exe"),
+                    os.path.expandvars(r"%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe"),
+                    os.path.expandvars(r"%LocalAppData%\Google\Chrome\Application\chrome.exe"),
+                    os.path.expandvars(r"%ProgramFiles(x86)%\Microsoft\Edge\Application\msedge.exe"),
+                    os.path.expandvars(r"%ProgramFiles%\Microsoft\Edge\Application\msedge.exe"),
+                ]
+            elif IS_MAC:
+                browser_candidates = [
+                    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+                    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+                    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+                    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+                ]
+            else:
+                browser_candidates = [
+                    shutil.which(name)
+                    for name in ("google-chrome", "microsoft-edge", "brave-browser", "chromium", "chromium-browser")
+                ]
+
+            browser_exe = next((p for p in browser_candidates if p and os.path.exists(p)), None)
 
             if browser_exe:
                 dev_profile = os.path.join(tempfile.gettempdir(), "msc-devtools-profile")
@@ -410,7 +481,7 @@ def launch_devtools_window():
                         "--no-default-browser-check",
                         f"--app={inspector_url}"
                     ],
-                    creationflags=0x08000000
+                    **_quiet()
                 )
             else:
                 webbrowser.open(f"http://localhost:{DEBUG_PORT}")

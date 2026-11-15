@@ -7,7 +7,7 @@ echo  Building Spotify UI Tweaker Standalone Executable
 echo ===================================================
 
 :: 1. Ensure PyInstaller and websockets are installed
-python -m pip install --upgrade pyinstaller websockets
+python -m pip install --upgrade pyinstaller websockets || python -m pip install --user --upgrade pyinstaller websockets
 
 :: 2. Clean previous build artifacts
 if exist "build" rmdir /s /q "build"
@@ -17,12 +17,17 @@ if exist "*.spec" del /q "*.spec"
 :: 3. Build single-file windowed EXE with all extension assets embedded
 ::    --noconsole hides the black terminal window on launch
 ::    --add-data bundles your HTML, JS, CSS, and themes folder inside the EXE
+::    Uses Spotify's own icon when the client is installed in the standard
+::    location; falls back to the default icon otherwise.
+set ICON_ARGS=
+if exist "%APPDATA%\Spotify\Spotify.exe" set ICON_ARGS=--icon "%APPDATA%\Spotify\Spotify.exe"
+
 python -m PyInstaller ^
   --noconfirm ^
   --onefile ^
   --noconsole ^
   --name "SpotifyUITweaker" ^
-  --icon "%APPDATA%\Spotify\Spotify.exe" ^
+  %ICON_ARGS% ^
   --add-data "default.css;." ^
   --add-data "content.js;." ^
   --add-data "popup.html;." ^
