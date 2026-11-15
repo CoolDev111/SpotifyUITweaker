@@ -1,9 +1,10 @@
 name: Build SpotifyUITweaker
 
-# Builds the desktop-client launchers on real Windows and macOS runners:
-#   - Windows job  -> dist/SpotifyUITweaker.exe
-#   - macOS job    -> dist/SpotifyUITweaker.app (zipped with ditto)
-# Push a tag like v1.0.0 and both builds are attached to a GitHub Release.
+# Builds the Spotify UI Tweaker packages on CI runners:
+#   - Windows job   -> dist/SpotifyUITweaker.exe
+#   - macOS job     -> dist/SpotifyUITweaker.app (zipped with ditto)
+#   - Extension job -> SpotifyUITweaker-Extension.zip (Chrome MV3 extension)
+# Push a tag like v1.0.0 and all three builds are attached to a GitHub Release.
 #
 # NOTE: GitHub retired its Intel macOS runners (macos-13). CI produces
 # Apple-silicon builds only; Intel Mac users should build locally with
@@ -85,10 +86,29 @@ jobs:
           path: SpotifyUITweaker-macOS-AppleSilicon.zip
           if-no-files-found: error
 
+  extension:
+    name: Chrome extension zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Zip with the folder itself included, so unzipping produces a ready-to-load
+      # "SpotifyUITweaker - Extension" directory (Chrome's Load unpacked wants a
+      # folder directly containing manifest.json).
+      - name: Zip the extension folder
+        run: zip -r SpotifyUITweaker-Extension.zip "SpotifyUITweaker - Extension"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpotifyUITweaker-Extension
+          path: SpotifyUITweaker-Extension.zip
+          if-no-files-found: error
+
   release:
     name: Attach builds to GitHub Release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [windows, macos]
+    needs: [windows, macos, extension]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -108,11 +128,14 @@ jobs:
           files: |
             artifacts/SpotifyUITweaker-Windows.exe
             artifacts/SpotifyUITweaker-macOS-*.zip
+            artifacts/SpotifyUITweaker-Extension.zip
           fail_on_unmatched_files: true
           generate_release_notes: true
           body: |
-            Unsigned CI builds of the Spotify UI Tweaker desktop launchers.
+            Unsigned CI builds of the Spotify UI Tweaker.
 
+            - **Extension zip:** unzip, then `chrome://extensions` → Developer mode →
+              **Load unpacked** → select the `SpotifyUITweaker - Extension` folder
             - **macOS (Apple silicon):** unzip, then right-click the app → **Open** (once),
               or run `xattr -cr SpotifyUITweaker.app`
             - **Windows:** SmartScreen may warn — **More info** → **Run anyway**

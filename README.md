@@ -21,7 +21,7 @@ touches playback or DRM: the extension only changes how Spotify *looks*.
 
 | Path | What it is |
 |---|---|
-| `spotify-extension/` | The Chrome extension (Manifest V3). This is the folder you **Load unpacked** in Chrome. Full install guide in its [INSTALL.md](spotify-extension/INSTALL.md). |
+| `SpotifyUITweaker - Extension/` | The Chrome extension (Manifest V3). This is the folder you **Load unpacked** in Chrome. Full install guide in its [INSTALL.md](SpotifyUITweaker%20-%20Extension/INSTALL.md). |
 | `SpotifyUITweaker - Windows/` | Desktop-client launcher for Windows: `main.py` injects the extension into the Spotify client; `build.bat` builds a standalone `SpotifyUITweaker.exe`. |
 | `SpotifyUITweaker - Mac/` | Desktop-client launcher for macOS: the same cross-platform injector; `run.command` runs it from source, `build.command` builds a standalone `SpotifyUITweaker.app`. |
 | `.github/workflows/build.yml` | CI — builds the Windows exe + macOS app on every push; `v*` tags publish a GitHub Release with both builds. |
