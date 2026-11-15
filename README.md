@@ -60,7 +60,7 @@ themed consistently.
 
 1. Unzip/clone, then open `chrome://extensions`.
 2. Enable **Developer mode** (top-right).
-3. **Load unpacked** → select the `spotify-extension` folder — the one
+3. **Load unpacked** → select the `SpotifyUITweaker - Extension/` folder — the one
    directly containing `manifest.json`.
 4. Open `https://open.spotify.com`, click the toolbar icon, pick a theme in
    the **Themes** tab.
