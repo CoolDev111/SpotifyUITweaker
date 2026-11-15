@@ -20,7 +20,7 @@ touches playback or DRM: the extension only changes how Spotify *looks*.
 ## What's in this repo
 
 | Path | What it is |
-|---|---|
+|----|----|
 | `SpotifyUITweaker - Extension/` | The Chrome extension (Manifest V3). This is the folder you **Load unpacked** in Chrome. Full install guide in its [INSTALL.md](SpotifyUITweaker%20-%20Extension/INSTALL.md). |
 | `SpotifyUITweaker - Windows/` | Desktop-client launcher for Windows: `main.py` injects the extension into the Spotify client; `build.bat` builds a standalone `SpotifyUITweaker.exe`. |
 | `SpotifyUITweaker - Mac/` | Desktop-client launcher for macOS: the same cross-platform injector; `run.command` runs it from source, `build.command` builds a standalone `SpotifyUITweaker.app`. |
@@ -36,7 +36,7 @@ folder if you ever want the web-player version from the same place.
   - **Adaptive Album Glass** — frosted panels over an ambient backdrop that
     **re-tints itself from the current album cover** (accents, hover/press
     and backdrop all follow the music)
-  - **Frosted Glass**, **Neon Synthwave Glass**, **Violet Nebula Glass**,
+  - **Neon Synthwave Glass**, **Violet Nebula Glass**,
     **Amber Ember Glass**
 - **Named presets** — save any look with a name; rename, export/import as
   `.css`, delete (two-click confirm). A green border + **ON** badge marks
@@ -67,7 +67,7 @@ themed consistently.
 
 Edge/Brave work the same (`edge://extensions`, `brave://extensions`).
 Step-by-step details, updates-preserving-presets and troubleshooting:
-[`spotify-extension/INSTALL.md`](spotify-extension/INSTALL.md).
+[`SpotifyUITweaker%20-%20Extension/INSTALL.md`](SpotifyUITweaker%20-%20Extension/INSTALL.md).
 
 ## Install — Spotify desktop client
 
