@@ -9,6 +9,13 @@ touches playback or DRM: the extension only changes how Spotify *looks*.
 
 > [![Build SpotifyUITweaker](https://github.com/CoolDev111/SpotifyUITweaker/actions/workflows/build.yml/badge.svg)](https://github.com/CoolDev111/SpotifyUITweaker/actions/workflows/build.yml)
 
+> [!IMPORTANT]
+> **Unofficial project.** This is a fan-made customization tool. It is not
+> affiliated with, endorsed by, or connected to Spotify AB in any way.
+> "Spotify" is a trademark of Spotify AB, referenced here solely to describe
+> compatibility. Customizing the client may violate Spotify's Terms of Use —
+> use at your own risk.
+
 
 ## What's in this repo
 
@@ -121,15 +128,23 @@ CI and local builds are **unsigned**: macOS → right-click → **Open** (once),
 or `xattr -cr dist/SpotifyUITweaker.app`; Windows → SmartScreen
 **More info → Run anyway**.
 
-## Privacy & permissions
+## Privacy, permissions & legal
 
 - The extension only touches `https://open.spotify.com/*` — it cannot see or
   modify any other website.
 - No remote code, no analytics, nothing leaves your machine.
 - Settings live in `chrome.storage.local` (browser) or a local `storage.json`
   next to the launcher executable / app (desktop client).
+- **No Spotify assets are included or redistributed.** All code and artwork
+  in this repo are original; the build scripts copy the Spotify icon from
+  your own locally installed client (if present) purely at build time.
+- **No ad blocking, no DRM circumvention, no audio extraction** — the tool
+  changes appearance only.
+- "Spotify" is a trademark of Spotify AB; it is used here solely to indicate
+  compatibility. See [LICENSE](LICENSE) for the code license (MIT).
 
 ---
 
 **Version 1.5.6** · Manifest V3 · for `https://open.spotify.com` ·
-Python 3 + `websockets` for the desktop-client launcher
+Python 3 + `websockets` for the desktop-client launcher ·
+[MIT licensed](LICENSE)
