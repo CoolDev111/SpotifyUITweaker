@@ -1,0 +1,541 @@
+/* ================================================================
+   MY SPOTIFY CUSTOM — THEME: ADAPTIVE ALBUM GLASS (v4)
+   @msc-adaptive-album
+   Automatically samples the vibrant average color from the active
+   album cover and updates all accents + the ambient glass backdrop.
+   ================================================================ */
+
+/* ----------------------------------------------------------------
+   SECTION 0 — FALLBACK PALETTE & GLASS TOKENS
+   (Overridden live on :root whenever a track plays)
+   ---------------------------------------------------------------- */
+:root {
+  --msc-accent:        #38bdf8;
+  --msc-accent-hover:  #7dd3fc;
+  --msc-accent-press:  #0284c7;
+  --msc-text-primary:  #ffffff;
+  --msc-text-muted:    #cbd5e1;
+  --msc-on-accent:     #04131c;
+  --msc-adaptive-bg:   #131926;
+
+  --msc-glass-panel:   rgba(12, 14, 22, 0.56);
+  --msc-glass-bar:     rgba(10, 12, 20, 0.68);
+  --msc-glass-card:    rgba(255, 255, 255, 0.07);
+  --msc-glass-hover:   rgba(255, 255, 255, 0.14);
+  --msc-glass-border:  rgba(255, 255, 255, 0.13);
+  --msc-glass-blur:    blur(22px) saturate(145%);
+}
+
+/* ----------------------------------------------------------------
+   SECTION 0B — ADAPTIVE AMBIENT MESH & FROSTED GLASS PANELS
+   ---------------------------------------------------------------- */
+html,
+body,
+#main,
+#main > div {
+  background-color: var(--msc-adaptive-bg) !important;
+  background-image:
+    radial-gradient(circle at 18% 22%, var(--msc-accent) 0%, transparent 55%),
+    radial-gradient(circle at 82% 78%, var(--msc-accent-press) 0%, transparent 60%),
+    linear-gradient(135deg, #090b10 0%, var(--msc-adaptive-bg) 100%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+  transition: background-color 0.8s ease !important;
+}
+
+#main > div > div,
+.encore-dark-theme,
+section,
+main [style*="background-color"],
+main [style*="linear-gradient"],
+[data-testid="home-page"],
+[data-testid="home-page"] > div,
+[data-testid="playlist-page"],
+[data-testid="album-page"],
+[data-testid="search-page"],
+main header,
+[data-testid="topbar-content-wrapper"] {
+  --background-base:               transparent !important;
+  --background-elevated-base:      var(--msc-glass-card) !important;
+  --background-elevated-highlight: var(--msc-glass-hover) !important;
+  --background-tinted-base:        var(--msc-glass-card) !important;
+  --background-tinted-highlight:   var(--msc-glass-hover) !important;
+  --background-tinted-press:       rgba(255, 255, 255, 0.18) !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* 3. Frosted glass columns — let <main> expand to wrap the entire playlist height */
+#Desktop_LeftSidebar_Id,
+main,
+aside#Desktop_PanelContainer_Id {
+  background: var(--msc-glass-panel) !important;
+  backdrop-filter: var(--msc-glass-blur) !important;
+  -webkit-backdrop-filter: var(--msc-glass-blur) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Force <main> to grow with its content instead of stopping after the first viewport */
+main {
+  min-height: 100% !important;
+  height: auto !important;
+}
+
+/* Keep the outer scroll wrapper transparent so only <main> paints the glass box */
+div:has(> main) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 4. Frosted floating bottom player bar */
+[data-testid="now-playing-bar"] {
+  background: var(--msc-glass-bar) !important;
+  backdrop-filter: blur(26px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(160%) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 5. Full-Width Frosted Top Bar & Titlebar Cleanup */
+#main > div > div:first-child,
+#Desktop_Titlebar_Id,
+[data-testid="titlebar"],
+#main > div > header {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+#global-nav-bar,
+[data-testid="global-nav-bar"],
+header[data-testid="global-nav-bar"] {
+  background: var(--msc-glass-bar) !important;
+  backdrop-filter: blur(26px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(160%) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  margin: 6px 6px 0 6px !important;
+  width: calc(100% - 12px) !important;
+  max-width: none !important;
+}
+
+/* Search input pill & Home circular button inside the top bar */
+#global-nav-bar form,
+[data-testid="global-nav-bar"] form {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Style only the inner rounded search capsule & Home circular button */
+#global-nav-bar form > div,
+[data-testid="global-nav-bar"] form > div,
+#global-nav-bar [data-testid="home-button"],
+[data-testid="global-nav-bar"] [data-testid="home-button"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 9999px !important;
+  color: var(--msc-text-primary) !important;
+}
+
+/* Keep the raw <input> text field inside the capsule borderless */
+[data-testid="search-input"],
+#global-nav-bar input[type="search"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--msc-text-primary) !important;
+}
+
+/* Highlight the single capsule cleanly when typing */
+#global-nav-bar form:focus-within > div,
+[data-testid="global-nav-bar"] form:focus-within > div {
+  background: rgba(255, 255, 255, 0.13) !important;
+  border-color: var(--msc-accent) !important;
+  box-shadow: 0 0 0 1px var(--msc-accent) !important;
+}
+
+/* Back & Forward history buttons (no nested backdrop-filter so there is no seam) */
+[data-testid="top-bar-back-button"],
+[data-testid="top-bar-forward-button"],
+#global-nav-bar button[aria-label="Go back"],
+#global-nav-bar button[aria-label="Go forward"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  color: var(--msc-text-primary) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-testid="top-bar-back-button"]:hover:not(:disabled),
+[data-testid="top-bar-forward-button"]:hover:not(:disabled),
+#global-nav-bar button[aria-label="Go back"]:hover:not(:disabled),
+#global-nav-bar button[aria-label="Go forward"]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: var(--msc-accent) !important;
+}
+
+/* Top-bar icons (including your injected #msc-nav-tweaker-btn) */
+#global-nav-bar button svg,
+[data-testid="global-nav-bar"] button svg,
+#msc-nav-tweaker-btn svg {
+  color: var(--msc-text-muted) !important;
+  transition: color 0.15s ease, transform 0.15s ease !important;
+}
+
+#global-nav-bar button:hover svg,
+[data-testid="global-nav-bar"] button:hover svg,
+#msc-nav-tweaker-btn:hover svg {
+  color: var(--msc-accent) !important;
+  transform: scale(1.06);
+}
+
+/* 6. Frosted media cards & row hover highlights */
+main [data-testid="component-shelf"] [role="group"],
+main [data-testid="card-click-handler"] {
+  background: var(--msc-glass-card) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 12px !important;
+}
+
+main [data-testid="component-shelf"] [role="group"]:hover,
+main [data-testid="tracklist-row"]:hover,
+#Desktop_LeftSidebar_Id li:hover {
+  background: var(--msc-glass-hover) !important;
+  border-radius: 10px !important;
+}
+
+/* 7. Frosted Glass Context Menus, Dropdowns & Popovers */
+#context-menu,
+#context-menu > *,
+[data-testid="context-menu"],
+[data-encore-id="contextMenu"],
+[data-encore-id="popover"],
+[role="menu"],
+[role="listbox"],
+[data-tippy-root] [role="tooltip"] {
+  --background-elevated-base: rgba(14, 16, 26, 0.78) !important;
+  --background-elevated-highlight: var(--msc-glass-hover) !important;
+  --background-elevated-press: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(14, 16, 26, 0.78) !important;
+  background-color: rgba(14, 16, 26, 0.78) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55) !important;
+  color: var(--msc-text-primary) !important;
+}
+
+/* Keep inner menu <ul> transparent so the outer container's blur shows cleanly */
+#context-menu ul,
+[role="menu"] ul {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+}
+
+/* Menu items & hover state */
+#context-menu button,
+#context-menu a,
+[role="menu"] [role="menuitem"],
+[role="menu"] [role="menuitemradio"],
+[role="menu"] [role="menuitemcheckbox"],
+[role="listbox"] [role="option"] {
+  color: var(--msc-text-primary) !important;
+  border-radius: 8px !important;
+}
+
+#context-menu button:hover,
+#context-menu a:hover,
+[role="menu"] [role="menuitem"]:hover,
+[role="menu"] [role="menuitemradio"]:hover,
+[role="menu"] [role="menuitemcheckbox"]:hover,
+[role="listbox"] [role="option"]:hover,
+[role="menu"] [data-highlighted] {
+  background: var(--msc-glass-hover) !important;
+  color: var(--msc-accent) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTIONS 1–7 (Standard Selector Map v4)
+   ---------------------------------------------------------------- */
+:root, *, *::before, *::after {
+  --text-base:               var(--msc-text-primary) !important;
+  --text-subdued:            var(--msc-text-muted) !important;
+  --text-bright-accent:      var(--msc-accent) !important;
+  --essential-bright-accent: var(--msc-accent) !important;
+  --text-announcement:       var(--msc-accent) !important;
+}
+
+[class*="encore-inverted-light-set"],
+[class*="encore-bright-accent-set"] {
+  --text-base:    var(--msc-on-accent) !important;
+  --text-subdued: var(--msc-on-accent) !important;
+}
+
+[class*="encore-bright-accent-set"] {
+  --background-base:               var(--msc-accent) !important;
+  --background-highlight:          var(--msc-accent-hover) !important;
+  --background-press:              var(--msc-accent-press) !important;
+  --background-elevated-base:      var(--msc-accent-hover) !important;
+  --background-elevated-highlight: var(--msc-accent-hover) !important;
+  --background-elevated-press:     var(--msc-accent-press) !important;
+  --background-tinted-base:        var(--msc-accent) !important;
+  --background-tinted-highlight:   var(--msc-accent) !important;
+  --background-tinted-press:       var(--msc-accent) !important;
+  --decorative-subdued:            var(--msc-accent) !important;
+}
+
+[class*="encore-internal-color-text-base"]          { color: var(--msc-text-primary) !important; }
+[class*="encore-internal-color-text-subdued"]       { color: var(--msc-text-muted) !important; }
+[class*="encore-internal-color-text-bright-accent"] { color: var(--msc-accent) !important; }
+[class*="encore-internal-color-text-announcement"]  { color: var(--msc-accent) !important; }
+
+#Desktop_LeftSidebar_Id [data-encore-id="listRowTitle"]:not([class*="encore-internal-color-text-bright-accent"]),
+#Desktop_LeftSidebar_Id [id^="listrow-title-"]:not([class*="encore-internal-color-text-bright-accent"]),
+#Desktop_LeftSidebar_Id h1, #Desktop_LeftSidebar_Id h2, #Desktop_LeftSidebar_Id nav a, #Desktop_LeftSidebar_Id nav button,
+main [data-testid="entityTitle"] h1, main [data-testid="entityTitle"] [data-encore-id="text"],
+main [data-testid="tracklist-row"] a[data-testid="internal-track-link"],
+main [data-testid="tracklist-row"] [data-testid="internal-track-link"] [data-encore-id="text"]:not([class*="encore-internal-color-text-bright-accent"]),
+aside h2, aside h3,
+aside li[role="row"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]),
+[data-testid="now-playing-widget-v2"] [data-testid="context-item-link"],
+[data-testid="now-playing-widget-v2"] [data-testid="context-item-link"] * {
+  color: var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+#Desktop_LeftSidebar_Id [data-encore-id="listRowSubtitle"],
+#Desktop_LeftSidebar_Id [id^="listrow-subtitle-"],
+main [data-testid="tracklist-row"] a[href*="/artist/"],
+main [data-testid="tracklist-row"] a[href*="/album/"],
+aside li[role="row"] [data-encore-id="text"][class*="encore-internal-color-text-subdued"],
+[data-testid="now-playing-widget-v2"] [data-testid="now-playing-widget-v2-byline"],
+[data-testid="now-playing-widget-v2"] [data-testid="now-playing-widget-v2-byline"] * {
+  color: var(--msc-text-muted) !important;
+  --text-base: var(--msc-text-muted) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+[data-testid="now-playing-bar"] [data-testid="playback-progressbar"] [data-testid="progress-bar"] {
+  --fg-color: var(--msc-accent) !important;
+  --is-active-fg-color: var(--msc-accent) !important;
+}
+
+[data-testid="now-playing-bar"] button[aria-checked="true"],
+[data-testid="now-playing-bar"] button[aria-pressed="true"] {
+  color: var(--msc-accent) !important;
+}
+
+[data-testid="lyrics-button"]::after,
+[data-testid="control-button-queue"]::after {
+  background-color: var(--msc-accent) !important;
+}
+
+[data-testid="volume-bar"] [data-testid="progress-bar"] {
+  --fg-color: var(--msc-text-primary) !important;
+  --is-active-fg-color: var(--msc-accent) !important;
+}
+
+button[data-testid="play-button"] [class*="encore-bright-accent-set"],
+button[data-testid="control-button-playpause"] [class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent) !important;
+  color: var(--msc-on-accent) !important;
+}
+button[data-testid="play-button"]:hover [class*="encore-bright-accent-set"],
+button[data-testid="control-button-playpause"]:hover [class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent-hover) !important;
+}
+button[data-testid="play-button"]:active [class*="encore-bright-accent-set"],
+button[data-testid="control-button-playpause"]:active [class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent-press) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 8 — ACTIVE FILTER PILLS & PANEL TABS
+   ---------------------------------------------------------------- */
+/* 1. Rounded Filter Chips (Library: Playlists/By you; Home: All/Music/Podcasts) */
+[role="checkbox"][aria-checked="true"],
+[role="radio"][aria-checked="true"],
+button[aria-checked="true"][data-encore-id="chip"],
+button[aria-pressed="true"][data-encore-id="chip"],
+[class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent) !important;
+  color: var(--msc-on-accent) !important;
+  border-radius: 9999px !important;
+  --text-base: var(--msc-on-accent) !important;
+  --text-subdued: var(--msc-on-accent) !important;
+}
+
+/* Force all child text & icons inside active chips / inverted pills to use --msc-on-accent */
+[role="checkbox"][aria-checked="true"] *,
+[role="radio"][aria-checked="true"] *,
+button[aria-checked="true"][data-encore-id="chip"] *,
+button[aria-pressed="true"][data-encore-id="chip"] *,
+[class*="encore-inverted-light-set"] *,
+[class*="encore-inverted-light-set"] [class*="encore-internal-color-text-base"],
+[class*="encore-inverted-light-set"] [data-encore-id="text"] {
+  color: var(--msc-on-accent) !important;
+  fill: var(--msc-on-accent) !important;
+  --text-base: var(--msc-on-accent) !important;
+}
+
+/* 2. Right Panel Tabs ("Queue" / "Recently played") — keep transparent with accent text & underline */
+[role="tab"][aria-selected="true"] {
+  background-color: transparent !important;
+  color: var(--msc-accent) !important;
+  --text-base: var(--msc-accent) !important;
+}
+
+[role="tab"][aria-selected="true"] * {
+  color: var(--msc-accent) !important;
+  --text-base: var(--msc-accent) !important;
+}
+
+[role="tab"][aria-selected="true"]::after {
+  background-color: var(--msc-accent) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 9 — PREFERENCES & EQUALIZER FROSTED GLASS
+   ---------------------------------------------------------------- */
+/* 1. Settings dropdowns (e.g., Equalizer Presets, Audio Quality, Language) */
+[data-settings-row="true"] select,
+select[id^="desktop."] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--msc-text-primary) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  outline: none !important;
+}
+
+[data-settings-row="true"] select:hover,
+select[id^="desktop."]:hover,
+[data-settings-row="true"] select:focus,
+select[id^="desktop."]:focus {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  border-color: var(--msc-accent) !important;
+}
+
+/* Native <option> & <optgroup> popup list colors */
+[data-settings-row="true"] select option,
+[data-settings-row="true"] select optgroup,
+select[id^="desktop."] option,
+select[id^="desktop."] optgroup {
+  background-color: #121420 !important;
+  color: var(--msc-text-primary) !important;
+}
+
+/* 2. Equalizer outer glass card & perfectly aligned canvas + sliders */
+[data-settings-row="true"]:has(canvas[aria-label="Equalizer"]) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+}
+
+/* Keep the inner canvas positioning wrapper padding-free so dots & tracks align 1:1 */
+div:has(> canvas[aria-label="Equalizer"]) {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+canvas[aria-label="Equalizer"] {
+  border-radius: 8px !important;
+}
+
+/* 3. Equalizer frequency range sliders & thumbs */
+input[type="range"][aria-label^="Change decibels at"] {
+  accent-color: var(--msc-accent) !important;
+  cursor: pointer !important;
+}
+
+input[type="range"][aria-label^="Change decibels at"]::-webkit-slider-thumb {
+  background: var(--msc-accent) !important;
+  border: 2px solid var(--msc-text-primary) !important;
+  box-shadow: 0 0 8px var(--msc-accent) !important;
+}
+
+input[type="range"][aria-label^="Change decibels at"]::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-radius: 999px !important;
+}
+
+/* Equalizer labels (+12dB, -12dB, 60Hz..15KHz) */
+div:has(> canvas[aria-label="Equalizer"]) label {
+  color: var(--msc-text-muted) !important;
+}
+
+/* 4. Settings Secondary Buttons (e.g., Equalizer "Reset") & Toggle Switches */
+[data-settings-row="true"] [data-encore-id="buttonSecondary"],
+main [data-encore-id="buttonSecondary"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: var(--msc-text-primary) !important;
+  border-radius: 9999px !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+
+[data-settings-row="true"] [data-encore-id="buttonSecondary"]:hover,
+main [data-encore-id="buttonSecondary"]:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--msc-accent) !important;
+}
+
+/* Active toggle switches in Settings */
+[data-settings-row="true"] input[type="checkbox"]:checked + span,
+[data-settings-row="true"] [role="switch"][aria-checked="true"] {
+  background-color: var(--msc-accent) !important;
+}
+
+/* 5. Layout Density Preview Cards ("Dense" / "Default" / "Spacious") */
+[data-settings-row="true"] div:has(> svg[data-selected]) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 10px !important;
+  padding: 6px !important;
+  transition: border-color 0.15s ease, background 0.15s ease !important;
+}
+
+[data-settings-row="true"] div:has(> svg[data-selected="true"]) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: var(--msc-accent) !important;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-settings-row="true"] svg[data-selected="false"] {
+  color: var(--msc-text-muted) !important;
+}
+
+[data-settings-row="true"] svg[data-selected="true"] {
+  color: var(--msc-accent) !important;
+}
+
+/* 6. Zoom Level Radio Track & Active Dot ("70%" ... "130%") */
+[aria-label="Select zoom level"] label[data-selected="true"] > div > div:first-child {
+  background-color: var(--msc-accent) !important;
+  border-color: var(--msc-accent) !important;
+  box-shadow: 0 0 8px var(--msc-accent) !important;
+}
+
+[aria-label="Select zoom level"] label[data-selected="true"] [data-encore-id="text"] {
+  color: var(--msc-accent) !important;
+  font-weight: 700 !important;
+}
+
+/* 7. Catch any remaining Spotify green tokens in Settings toggles & indicators */
+:root,
+[data-settings-row="true"] {
+  --essential-positive:  var(--msc-accent) !important;
+  --background-positive: var(--msc-accent) !important;
+  --text-positive:       var(--msc-accent) !important;
+}

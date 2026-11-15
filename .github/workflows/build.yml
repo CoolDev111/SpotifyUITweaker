@@ -1,0 +1,142 @@
+name: Build SpotifyUITweaker
+
+# Builds the Spotify UI Tweaker packages on CI runners:
+#   - Windows job   -> dist/SpotifyUITweaker.exe
+#   - macOS job     -> dist/SpotifyUITweaker.app (zipped with ditto)
+#   - Extension job -> SpotifyUITweaker-Extension.zip (Chrome MV3 extension)
+# Push a tag like v1.0.0 and all three builds are attached to a GitHub Release.
+#
+# NOTE: GitHub retired its Intel macOS runners (macos-13). CI produces
+# Apple-silicon builds only; Intel Mac users should build locally with
+# build.command or run from source with run.command.
+#
+# The PyInstaller arguments below mirror build.bat / build.command.
+# No --icon is passed because Spotify isn't installed on the runners
+# (both build scripts fall back to the default icon the same way).
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+jobs:
+  windows:
+    name: Windows exe
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: python -m pip install --upgrade pyinstaller websockets
+
+      - name: Build SpotifyUITweaker.exe
+        working-directory: SpotifyUITweaker - Windows
+        run: python -m PyInstaller --noconfirm --onefile --noconsole --name "SpotifyUITweaker" --add-data "default.css;." --add-data "content.js;." --add-data "popup.html;." --add-data "popup.js;." --add-data "themes;themes" main.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpotifyUITweaker-Windows
+          path: "SpotifyUITweaker - Windows/dist/SpotifyUITweaker.exe"
+          if-no-files-found: error
+
+  macos:
+    name: macOS app (Apple silicon)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install build dependencies
+        run: python3 -m pip install --upgrade pyinstaller websockets
+
+      - name: Build SpotifyUITweaker.app
+        working-directory: SpotifyUITweaker - Mac
+        run: |
+          python3 -m PyInstaller \
+            --noconfirm \
+            --onefile \
+            --windowed \
+            --name "SpotifyUITweaker" \
+            --add-data "default.css:." \
+            --add-data "content.js:." \
+            --add-data "popup.html:." \
+            --add-data "popup.js:." \
+            --add-data "themes:themes" \
+            main.py
+
+      - name: Zip the app bundle (ditto keeps mac metadata + permissions)
+        run: |
+          cd "SpotifyUITweaker - Mac"
+          ls -la dist
+          ditto -c -k --sequesterRsrc --keepParent dist/SpotifyUITweaker.app "../SpotifyUITweaker-macOS-AppleSilicon.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpotifyUITweaker-macOS-AppleSilicon
+          path: SpotifyUITweaker-macOS-AppleSilicon.zip
+          if-no-files-found: error
+
+  extension:
+    name: Chrome extension zip
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Zip with the folder itself included, so unzipping produces a ready-to-load
+      # "SpotifyUITweaker - Extension" directory (Chrome's Load unpacked wants a
+      # folder directly containing manifest.json).
+      - name: Zip the extension folder
+        run: zip -r SpotifyUITweaker-Extension.zip "SpotifyUITweaker - Extension"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpotifyUITweaker-Extension
+          path: SpotifyUITweaker-Extension.zip
+          if-no-files-found: error
+
+  release:
+    name: Attach builds to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, macos, extension]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Rename exe for release
+        run: mv artifacts/SpotifyUITweaker.exe artifacts/SpotifyUITweaker-Windows.exe
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/SpotifyUITweaker-Windows.exe
+            artifacts/SpotifyUITweaker-macOS-*.zip
+            artifacts/SpotifyUITweaker-Extension.zip
+          fail_on_unmatched_files: true
+          generate_release_notes: true
+          body: |
+            Unsigned CI builds of the Spotify UI Tweaker.
+
+            - **Extension zip:** unzip, then `chrome://extensions` → Developer mode →
+              **Load unpacked** → select the `SpotifyUITweaker - Extension` folder
+            - **macOS (Apple silicon):** unzip, then right-click the app → **Open** (once),
+              or run `xattr -cr SpotifyUITweaker.app`
+            - **Windows:** SmartScreen may warn — **More info** → **Run anyway**
+            - Intel Macs: build locally with `build.command` or run from source with `run.command

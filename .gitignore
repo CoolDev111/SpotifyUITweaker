@@ -1,0 +1,12 @@
+# python build artifacts
+__pycache__/
+*.pyc
+
+# pyinstaller output (launcher packages)
+SpotifyUITweaker - Windows/build/
+SpotifyUITweaker - Windows/dist/
+SpotifyUITweaker - Windows/*.spec
+SpotifyUITweaker - Mac/build/
+SpotifyUITweaker - Mac/dist/
+SpotifyUITweaker - Mac/*.spec
+SpotifyUITweaker-macOS-*.zip

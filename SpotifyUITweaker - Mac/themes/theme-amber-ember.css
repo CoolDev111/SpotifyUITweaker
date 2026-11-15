@@ -1,0 +1,947 @@
+/* ================================================================
+   MY SPOTIFY CUSTOM — THEME: AMBER EMBER GLASS (v4.1, ext v1.5.6)
+   default.css structure + SECTION 0B frosted glass — ONLY SECTION 0
+   (and the glass tokens inside it) differ from default.css.
+
+   Palette: warm amber accent, cream text, sand metadata, deep-coffee
+   glyphs on amber surfaces. Contrast: amber vs coffee ≈ 8.4:1 (AA+).
+
+   v1.5.6 upgrades (ported from theme-adaptive-album.css v4):
+   - SECTION 0B: ambient ember mesh backdrop + frosted glass panels
+     (sidebar / main / right panel / player bar / global nav bar /
+     context menus). The radial spots follow the accent, so the mesh
+     re-hues with SECTION 0.
+   - SECTION 8: active filter pills & right-panel tabs.
+   - SECTION 9: settings dropdowns, Equalizer card & sliders,
+     secondary buttons, toggle switches, density cards, zoom radio
+     and the leftover green `positive` tokens.
+   ================================================================ */
+
+/* ----------------------------------------------------------------
+   SECTION 0 — PALETTE & GLASS TOKENS. Edit only this block.
+   ---------------------------------------------------------------- */
+:root {
+  --msc-accent:       #f5a524;  /* warm amber — replaces Spotify green everywhere */
+  --msc-accent-hover: #ffc04d;  /* lighter amber on hover */
+  --msc-accent-press: #cf8b12;  /* deeper amber while pressed */
+  --msc-text-primary: #fff6ea;  /* warm cream — song titles, playlist names, headers */
+  --msc-text-muted:   #b3a58f;  /* warm sand — artists, subtitles, metadata */
+  --msc-on-accent:    #231402;  /* deep coffee — text/icons placed ON amber surfaces */
+
+  /* Ambient mesh ground (deep ember brown) */
+  --msc-adaptive-bg:  #1b130a;
+
+  /* Frosted glass surface & border tokens (amber-tinted) */
+  --msc-glass-panel:  rgba(28, 19, 10, 0.56);
+  --msc-glass-bar:    rgba(24, 16, 8, 0.68);
+  --msc-glass-card:   rgba(255, 255, 255, 0.07);
+  --msc-glass-hover:  rgba(255, 255, 255, 0.14);
+  --msc-glass-border: rgba(255, 192, 77, 0.16);
+  --msc-glass-blur:   blur(22px) saturate(145%);
+}
+
+/* ----------------------------------------------------------------
+   SECTION 0B — AMBIENT MESH BACKDROP & FROSTED GLASS PANELS (v1.5.6)
+   Ported from theme-adaptive-album.css. The radial spots follow
+   --msc-accent / --msc-accent-press, so the whole mesh re-hues with
+   the palette in SECTION 0.
+   ---------------------------------------------------------------- */
+html,
+body,
+#main,
+#main > div {
+  background-color: var(--msc-adaptive-bg) !important;
+  background-image:
+    radial-gradient(circle at 18% 22%, var(--msc-accent) 0%, transparent 55%),
+    radial-gradient(circle at 82% 78%, var(--msc-accent-press) 0%, transparent 60%),
+    linear-gradient(135deg, #120c06 0%, var(--msc-adaptive-bg) 100%) !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+  transition: background-color 0.8s ease !important;
+}
+
+#main > div > div,
+.encore-dark-theme,
+section,
+main [style*="background-color"],
+main [style*="linear-gradient"],
+[data-testid="home-page"],
+[data-testid="home-page"] > div,
+[data-testid="playlist-page"],
+[data-testid="album-page"],
+[data-testid="search-page"],
+main header,
+[data-testid="topbar-content-wrapper"] {
+  --background-base:               transparent !important;
+  --background-elevated-base:      var(--msc-glass-card) !important;
+  --background-elevated-highlight: var(--msc-glass-hover) !important;
+  --background-tinted-base:        var(--msc-glass-card) !important;
+  --background-tinted-highlight:   var(--msc-glass-hover) !important;
+  --background-tinted-press:       rgba(255, 255, 255, 0.18) !important;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Frosted glass columns — let <main> expand to wrap the entire playlist height */
+#Desktop_LeftSidebar_Id,
+main,
+aside#Desktop_PanelContainer_Id {
+  background: var(--msc-glass-panel) !important;
+  backdrop-filter: var(--msc-glass-blur) !important;
+  -webkit-backdrop-filter: var(--msc-glass-blur) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Force <main> to grow with its content instead of stopping after the first viewport */
+main {
+  min-height: 100% !important;
+  height: auto !important;
+}
+
+/* Keep the outer scroll wrapper transparent so only <main> paints the glass box */
+div:has(> main) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Frosted floating bottom player bar */
+[data-testid="now-playing-bar"] {
+  background: var(--msc-glass-bar) !important;
+  backdrop-filter: blur(26px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(160%) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Full-Width Frosted Top Bar & Titlebar Cleanup */
+#main > div > div:first-child,
+#Desktop_Titlebar_Id,
+[data-testid="titlebar"],
+#main > div > header {
+  background: transparent !important;
+  background-color: transparent !important;
+}
+
+/* Frosted global nav bar (surface rules; text/icon recolors live in SECTION 2B) */
+#global-nav-bar,
+[data-testid="global-nav-bar"],
+header[data-testid="global-nav-bar"] {
+  background: var(--msc-glass-bar) !important;
+  backdrop-filter: blur(26px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(160%) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  margin: 6px 6px 0 6px !important;
+  width: calc(100% - 12px) !important;
+  max-width: none !important;
+}
+
+/* Search input pill & Home circular button inside the top bar */
+#global-nav-bar form,
+[data-testid="global-nav-bar"] form {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+#global-nav-bar form > div,
+[data-testid="global-nav-bar"] form > div,
+#global-nav-bar [data-testid="home-button"],
+[data-testid="global-nav-bar"] [data-testid="home-button"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 9999px !important;
+}
+
+/* Keep the raw <input> text field inside the capsule borderless */
+[data-testid="search-input"],
+#global-nav-bar input[type="search"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Back & Forward history buttons (no nested backdrop-filter so there is no seam) */
+[data-testid="top-bar-back-button"],
+[data-testid="top-bar-forward-button"],
+#global-nav-bar button[aria-label="Go back"],
+#global-nav-bar button[aria-label="Go forward"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+[data-testid="top-bar-back-button"]:hover:not(:disabled),
+[data-testid="top-bar-forward-button"]:hover:not(:disabled),
+#global-nav-bar button[aria-label="Go back"]:hover:not(:disabled),
+#global-nav-bar button[aria-label="Go forward"]:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-color: var(--msc-accent) !important;
+}
+
+/* Frosted media cards & row hover highlights */
+main [data-testid="component-shelf"] [role="group"],
+main [data-testid="card-click-handler"] {
+  background: var(--msc-glass-card) !important;
+  border: 1px solid rgba(255, 255, 255, 0.09) !important;
+  border-radius: 12px !important;
+}
+
+main [data-testid="component-shelf"] [role="group"]:hover,
+main [data-testid="tracklist-row"]:hover,
+#Desktop_LeftSidebar_Id li:hover,
+aside li[role="row"]:hover {
+  background: var(--msc-glass-hover) !important;
+  border-radius: 10px !important;
+}
+
+/* Frosted Glass Context Menus, Dropdowns & Popovers */
+#context-menu,
+#context-menu > *,
+[data-testid="context-menu"],
+[data-encore-id="contextMenu"],
+[data-encore-id="popover"],
+[role="menu"],
+[role="listbox"],
+[data-tippy-root] [role="tooltip"] {
+  --background-elevated-base: rgba(14, 16, 26, 0.78) !important;
+  --background-elevated-highlight: var(--msc-glass-hover) !important;
+  --background-elevated-press: rgba(255, 255, 255, 0.18) !important;
+  background: rgba(14, 16, 26, 0.78) !important;
+  background-color: rgba(14, 16, 26, 0.78) !important;
+  backdrop-filter: blur(24px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  border: 1px solid var(--msc-glass-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55) !important;
+  color: var(--msc-text-primary) !important;
+}
+
+/* Keep inner menu <ul> transparent so the outer container's blur shows cleanly */
+#context-menu ul,
+[role="menu"] ul {
+  background: transparent !important;
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+}
+
+/* Menu items & hover state */
+#context-menu button,
+#context-menu a,
+[role="menu"] [role="menuitem"],
+[role="menu"] [role="menuitemradio"],
+[role="menu"] [role="menuitemcheckbox"],
+[role="listbox"] [role="option"] {
+  color: var(--msc-text-primary) !important;
+  border-radius: 8px !important;
+}
+
+#context-menu button:hover,
+#context-menu a:hover,
+[role="menu"] [role="menuitem"]:hover,
+[role="menu"] [role="menuitemradio"]:hover,
+[role="menu"] [role="menuitemcheckbox"]:hover,
+[role="listbox"] [role="option"]:hover,
+[role="menu"] [data-highlighted] {
+  background: var(--msc-glass-hover) !important;
+  color: var(--msc-accent) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 1 — GLOBAL ENCORE TOKEN OVERRIDE (the core fix)
+   Forces Spotify's semantic color tokens to our palette on every
+   element, so local re-scoping (--text-base on containers) and
+   inline styles can no longer win.
+   ---------------------------------------------------------------- */
+:root,
+*,
+*::before,
+*::after {
+  --text-base:               var(--msc-text-primary) !important;
+  --text-subdued:            var(--msc-text-muted) !important;
+  --text-bright-accent:      var(--msc-accent) !important;
+  --essential-bright-accent: var(--msc-accent) !important;
+  --text-announcement:       var(--msc-accent) !important;
+}
+
+/* Encore "token sets" place text on light/accent surfaces (green and
+   white buttons, chips, cards over cover art). Keep their text dark
+   so it stays readable on top of --msc-accent / light backgrounds. */
+[class*="encore-inverted-light-set"],
+[class*="encore-bright-accent-set"] {
+  --text-base:    var(--msc-on-accent) !important;
+  --text-subdued: var(--msc-on-accent) !important;
+}
+
+/* 1b. ACCENT SURFACES (v1.4.0 — the play-button fix).
+   The visible green of every primary surface is painted by the
+   encore-bright-accent-set rule itself, which hardcodes the entire
+   family (base/highlight/press/elevated/tinted) and never references
+   a shared token. Re-map that family so all accent surfaces follow
+   SECTION 0 — base = accent, hover = lighter, pressed = darker —
+   while text/icons on top stay --msc-on-accent via the rule above. */
+[class*="encore-bright-accent-set"] {
+  --background-base:               var(--msc-accent) !important;
+  --background-highlight:          var(--msc-accent-hover) !important;
+  --background-press:              var(--msc-accent-press) !important;
+  --background-elevated-base:      var(--msc-accent-hover) !important;
+  --background-elevated-highlight: var(--msc-accent-hover) !important;
+  --background-elevated-press:     var(--msc-accent-press) !important;
+  --background-tinted-base:        var(--msc-accent) !important;
+  --background-tinted-highlight:   var(--msc-accent) !important;
+  --background-tinted-press:       var(--msc-accent) !important;
+  --decorative-subdued:            var(--msc-accent) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 2 — ENCORE SEMANTIC COLOR CLASS LOCKS
+   Most text nodes carry one of these classes and resolve their color
+   through the tokens pinned above. These locks are a safety net for
+   the few hashed rules that try to hard-code a color.
+   ---------------------------------------------------------------- */
+[class*="encore-internal-color-text-base"]          { color: var(--msc-text-primary) !important; }
+[class*="encore-internal-color-text-subdued"]       { color: var(--msc-text-muted) !important; }
+[class*="encore-internal-color-text-bright-accent"] { color: var(--msc-accent) !important; }
+[class*="encore-internal-color-text-announcement"]  { color: var(--msc-accent) !important; }
+
+/* ----------------------------------------------------------------
+   SECTION 3 — LEFT SIDEBAR (#Desktop_LeftSidebar_Id)
+   ----------------------------------------------------------------
+   FINDINGS (resolves "inactive library rows stayed white"):
+   - The title is NOT a link: <p data-encore-id="listRowTitle"
+     id="listrow-title-<uri>"> and it carries
+     encore-internal-color-text-base itself — that is why rules on
+     li / role="row" / role="listitem" / anchors never changed it.
+   - Subtitle ("Playlist • 34 songs") is
+     <p data-encore-id="listRowSubtitle" id="listrow-subtitle-<uri>">.
+   - The ACTIVE/playing row title switches to
+     encore-internal-color-text-bright-accent; the :not() guards below
+     preserve that accent behavior.
+   - v1.3.0: rows no longer carry role="listitem" (matches 0 on
+     current builds); row wrappers use hashed classes. Title/subtitle
+     anchors alone cover every row (verified: 22/22 on live build).
+   ---------------------------------------------------------------- */
+#Desktop_LeftSidebar_Id,
+#Desktop_LeftSidebar_Id [data-testid="left-sidebar"] {
+  --text-base:    var(--msc-text-primary) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* 3a. Inactive library item titles (playlists, artists, albums...)
+   Row wrapper note (v1.3.0): the current build no longer puts
+   role="listitem" on library rows (li[role="listitem"] matches 0), so
+   the row wrapper is NOT styled directly. The title and subtitle carry
+   their own data-encore-id (listRowTitle / listRowSubtitle) and are
+   anchored below; the third selector is a harmless no-op fallback for
+   generic encore Text nodes inside the row text group, using the
+   encore component ids from Spotify's stable component catalog. */
+#Desktop_LeftSidebar_Id [data-encore-id="listRowTitle"]:not([class*="encore-internal-color-text-bright-accent"]),
+#Desktop_LeftSidebar_Id [id^="listrow-title-"]:not([class*="encore-internal-color-text-bright-accent"]),
+#Desktop_LeftSidebar_Id [data-encore-id="listRowTextGroup"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]) {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 3b. Library row subtitles */
+#Desktop_LeftSidebar_Id [data-encore-id="listRowSubtitle"],
+#Desktop_LeftSidebar_Id [id^="listrow-subtitle-"] {
+  color:         var(--msc-text-muted) !important;
+  --text-base:   var(--msc-text-muted) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* 3c. Sidebar headings ("Your Library") and nav links (Home/Search) */
+#Desktop_LeftSidebar_Id h1,
+#Desktop_LeftSidebar_Id h2,
+#Desktop_LeftSidebar_Id nav a,
+#Desktop_LeftSidebar_Id nav button {
+  color: var(--msc-text-primary) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 4 — MIDDLE MAIN VIEW (main)
+   ----------------------------------------------------------------
+   FINDINGS (resolves "tracklist song titles stayed white"):
+   - The anchor a[data-testid="internal-track-link"] has NO color of
+     its own; the visible text lives in an inner
+     div[data-encore-id="text"] carrying
+     encore-internal-color-text-base. Rules on the <a> alone always
+     lost to that inner declaration.
+   - Row state classes are hashed in current builds (no main-*
+     prefixes); use the testid + the :has() rules below.
+   ---------------------------------------------------------------- */
+main {
+  --text-base:    var(--msc-text-primary) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* 4a. Playlist / album header title (previously working — kept) */
+main [data-testid="entityTitle"] h1,
+main [data-testid="entityTitle"] [data-encore-id="text"],
+main [data-testid="entityTitle"] span[data-encore-id="text"] {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 4b. TRACKLIST SONG TITLES — target the color carrier, not just the link */
+main [data-testid="tracklist-row"] a[data-testid="internal-track-link"],
+main [data-testid="tracklist-row"] [data-testid="internal-track-link"] [data-encore-id="text"]:not([class*="encore-internal-color-text-bright-accent"]),
+main [data-testid="tracklist-row"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]) {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 4c. Artist / album links inside tracklist rows (kept from handoff) */
+main [data-testid="tracklist-row"] a[href*="/artist/"],
+main [data-testid="tracklist-row"] a[href*="/album/"] {
+  color:       var(--msc-text-muted) !important;
+  --text-base: var(--msc-text-muted) !important;
+}
+
+/* 4d. Currently playing row — keep the accent on artist line too.
+   (Row exposes a playing indicator; harmless no-op if absent.) */
+main [data-testid="tracklist-row"]:has([data-testid="now-playing-active"]) a[href*="/artist/"],
+main [data-testid="tracklist-row"]:has([data-testid="animated-now-playing"]) a[href*="/artist/"] {
+  color: var(--msc-accent) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 5 — RIGHT PANEL (aside: Queue / Now Playing view)
+   ----------------------------------------------------------------
+   FINDINGS (resolves "queue titles stayed white"):
+   - There is NO data-testid="queue-row" / "queue" / "queuePage" /
+     "queue-active-row" in the DOM.
+   - The panel is aside#Desktop_PanelContainer_Id with
+     aria-label="Queue" (queue) or "Now playing view" (NPV).
+   - Queue rows are li[role="row"] and their titles are PLAIN encore
+     Text nodes (no <a>, no testid), again carrying
+     encore-internal-color-text-base directly.
+   - Playing indicator: [data-testid="now-playing-active"] /
+     [data-testid="animated-now-playing"].
+   ---------------------------------------------------------------- */
+aside#Desktop_PanelContainer_Id,
+aside[aria-label="Queue"],
+aside[aria-label="Now playing view"],
+.Root__right-sidebar {
+  --text-base:    var(--msc-text-primary) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* 5a. Section headings — "Now playing", "Next from: ..." (kept) */
+aside h2,
+aside h3 {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 5b. Queue / NPV row titles (plain Text nodes) + any track links */
+aside li[role="row"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]),
+aside a[href*="/track/"] {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 5c. Queue row subtitles (artist names) stay muted */
+aside li[role="row"] [data-encore-id="text"][class*="encore-internal-color-text-subdued"],
+aside li[role="row"] a[href*="/artist/"] {
+  color:       var(--msc-text-muted) !important;
+  --text-base: var(--msc-text-muted) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 6 — BOTTOM PLAYER BAR ([data-testid="now-playing-bar"])
+   ----------------------------------------------------------------
+   FINDINGS (v1.3.0 — resolves "player bar title/artist stayed
+   white" AND explains the v1.2.x diagnostic zeros):
+   - The left side ships TWO variants from the dwp-now-playing-bar
+     chunk; the CURRENT default is the V2 widget:
+       div[data-testid="now-playing-widget-v2"] (role="region")
+       ├── div[data-testid="cover-art-container"]
+       │     └── video mode swaps in button[data-testid="video-player-npb"]
+       └── title + byline:
+             title   -> a[data-testid="context-item-link"] wrapping an
+                        encore Text (semanticColor "textBase")
+             byline  -> span[data-testid="now-playing-widget-v2-byline"]
+                        (semanticColor "textSubdued") with artist links
+             quality -> span[data-testid="context-item-info-quality"]
+                        (semanticColor "textBrightAccent" — accent chip)
+     The V1 widget [data-testid="now-playing-widget"] (older markup,
+     also still shipped) and the ad variant
+     [data-testid="context-item-info-title"] are kept as fallbacks.
+   - WHY v1.2.x diagnostics showed widget=0 / title-block=0 /
+     artist=0 but title-link=1: the build renders the V2 widget, whose
+     only legacy-shaped piece is the context-item-link anchor. Nothing
+     was broken — the rules below now target the actual markup.
+   - Music-video mode only replaces the cover art slot with the video
+     (video-player-npb); title/byline keep the V2 structure, so 6i/6j
+     cover MV text too.
+   - All color carriers are encore Text nodes resolving through
+     --text-base / --text-subdued / --text-bright-accent, which
+     SECTION 1 re-pins globally; 6i/6j are explicit belt-and-braces.
+   ---------------------------------------------------------------- */
+[data-testid="now-playing-bar"] {
+  --text-base:    var(--msc-text-primary) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* 6a. Standard track title (+ newer anchor testid) */
+[data-testid="now-playing-bar"] [data-testid="context-item-info-title"],
+[data-testid="now-playing-bar"] [data-testid="context-item-info-title"] a,
+[data-testid="now-playing-bar"] [data-testid="context-item-link"] {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 6b. Artist line under the title (testid is plural in new builds) */
+[data-testid="now-playing-bar"] [data-testid="context-item-info-subtitles"],
+[data-testid="now-playing-bar"] [data-testid="context-item-info-subtitle"],
+[data-testid="now-playing-bar"] [data-testid="context-item-info-artist"],
+[data-testid="now-playing-bar"] [data-testid="context-item-info-artist"] a {
+  color:       var(--msc-text-muted) !important;
+  --text-base: var(--msc-text-muted) !important;
+}
+
+/* 6c. MUSIC VIDEO / any-variant sweep: recolor every text node in the
+   widget subtree except nodes Spotify deliberately marks subdued or
+   accent. This is what catches the video-widget DOM regardless of
+   how it is nested. */
+[data-testid="now-playing-bar"] [data-testid="now-playing-widget"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]),
+[data-testid="now-playing-bar"] [data-testid="now-playing-widget"] a:not([data-testid="context-item-info-artist"]):not([data-testid="context-item-info-subtitle"]):not([data-testid="context-item-info-subtitles"]) {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 6d. Class-based fallbacks for builds where the widget testids are
+   absent (video mode / renamed testids). "trackInfo-*" are literal
+   CSS-module names in shipped CSS; harmless no-op if hashed away. */
+[data-testid="now-playing-bar"] [class*="trackInfo-name"],
+[data-testid="now-playing-bar"] [class*="trackInfo-name"] *,
+[data-testid="now-playing-bar"] [class*="trackInfo-container"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]) {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+[data-testid="now-playing-bar"] [class*="trackInfo-artists"],
+[data-testid="now-playing-bar"] [class*="trackInfo-artists"] * {
+  color:       var(--msc-text-muted) !important;
+  --text-base: var(--msc-text-muted) !important;
+}
+
+/* 6e. Playback progress bar fill (previously working — kept) */
+[data-testid="now-playing-bar"] [data-testid="playback-progressbar"] [data-testid="progress-bar"] {
+  --fg-color:           var(--msc-accent) !important;
+  --is-active-fg-color: var(--msc-accent) !important;
+}
+
+/* 6f. Active toggle buttons (shuffle/repeat on, etc.) — kept */
+[data-testid="now-playing-bar"] button[aria-checked="true"],
+[data-testid="now-playing-bar"] button[aria-pressed="true"] {
+  color: var(--msc-accent) !important;
+}
+
+/* 6g. WHOLE-BAR SWEEP (last resort, closes the music-video gap on
+   builds where the widget testids are missing). Recolors every text
+   node and link in the bar except nodes Spotify deliberately marks
+   subdued or accent, except artist links so they stay muted, and
+   except the V2 byline subtree (6j owns it — without this :not the
+   sweep would out-rank 6j and re-whiten the artist line). */
+[data-testid="now-playing-bar"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]):not([data-testid="now-playing-widget-v2-byline"] *),
+[data-testid="now-playing-bar"] a:not([data-testid="context-item-info-artist"]):not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]):not([data-testid="now-playing-widget-v2-byline"] *) {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 6h. V2 WIDGET (current default) — pin the Encore tokens on the
+   widget subtree so local re-scoping cannot win inside it. */
+[data-testid="now-playing-widget-v2"],
+[data-testid="now-playing-widget-v2"] [data-testid="cover-art-container"] {
+  --text-base:    var(--msc-text-primary) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* 6i. V2 TITLE — a[data-testid="context-item-link"] (or a plain span
+   on non-linkable items) wrapping an encore Text with
+   semanticColor="textBase". Explicitly target link, span and the
+   inner text carrier so nothing between them can override. */
+[data-testid="now-playing-widget-v2"] [data-testid="context-item-link"],
+[data-testid="now-playing-widget-v2"] [data-testid="context-item-link"] *,
+[data-testid="now-playing-widget-v2"] [data-testid="context-item-info-title"],
+[data-testid="now-playing-widget-v2"] [data-testid="context-item-info-title"] * {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 6j. V2 BYLINE (artist line) — span[data-testid=
+   "now-playing-widget-v2-byline"] carries
+   encore-internal-color-text-subdued; its artist links resolve through
+   the same token. Force muted so they never inherit title white. */
+[data-testid="now-playing-widget-v2"] [data-testid="now-playing-widget-v2-byline"],
+[data-testid="now-playing-widget-v2"] [data-testid="now-playing-widget-v2-byline"] * {
+  color:       var(--msc-text-muted) !important;
+  --text-base: var(--msc-text-muted) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* 6k. VIDEO / MUSIC VIDEO MODE — the cover art slot becomes the video
+   (button[data-testid="video-player-npb"] in the bar, video-player-npv
+   in the Now Playing view). Titles/bylines keep the 6i/6j structure.
+   No text lives inside the video slot itself; keep it neutral so the
+   SECTION 1 token pinning has no side effects on overlays. */
+[data-testid="video-player-npb"],
+[data-testid="video-player-npv"],
+[data-testid="now-playing-widget-v2"] [data-testid="cover-art-container"] [data-encore-id="text"]:not([class*="encore-internal-color-text-subdued"]):not([class*="encore-internal-color-text-bright-accent"]) {
+  color:       var(--msc-text-primary) !important;
+  --text-base: var(--msc-text-primary) !important;
+}
+
+/* 6l. ACTIVE-PANEL INDICATOR DOTS (v1.4.0) — the lyrics / queue
+   buttons at the right end of the bar show a 4px "panel open" dot
+   under the icon while their panel is on screen. Spotify paints it
+   through ::after on hashed modifier classes:
+     .IUYGQ1ar_HJsjBhthonA.skPy8s8VBL2W3a3lo8zz:after
+       { content:""; background-color:#1db954; width/height:4px;
+         position:absolute; bottom:0; left:50% }
+   The dot host IS the button (the indicator component puts base +
+   modifier + the stable testid on the same element), so overriding
+   the background via the testids is enough. Inactive buttons get no
+   content from Spotify's rule, and we never set content ourselves,
+   so no stray dot can appear. Descendant ::after is included as a
+   harmless fallback in case a future build moves the dot to a child. */
+[data-testid="lyrics-button"]::after,
+[data-testid="control-button-queue"]::after,
+[data-testid="lyrics-button"] ::after,
+[data-testid="control-button-queue"] ::after {
+  background-color: var(--msc-accent) !important;
+}
+
+/* 6m. VOLUME SLIDER (v1.4.1) — the volume control embeds the shared
+   ProgressBar component: div[data-testid="volume-bar"] > slider >
+   div[data-testid="progress-bar"]. The component root hardcodes its
+   palette: --fg-color:#fff (fill + handle), --is-active-fg-color:
+   #1db954 (the fill while the slider is hovered/dragged — legacy
+   green), --mg-color:#ffffffb3 (hover ghost), --bg-color:#ffffff4d
+   (track). Pin the fill/handle to the theme's primary white so the
+   resting state keeps Spotify's white chrome (cream in themed
+   palettes), and the hover/drag fill to the accent so it matches the
+   timeline fill (6e). Translucent track/ghost whites stay Spotify's. */
+[data-testid="volume-bar"] [data-testid="progress-bar"] {
+  --fg-color:           var(--msc-text-primary) !important;
+  --is-active-fg-color: var(--msc-accent) !important;
+}
+
+/* ================================================================
+   SECTION 7 — PLAY BUTTONS (main view: playlist/album/card headers)
+   ================================================================
+   v1.4.0. The big green play button is:
+     button[data-testid="play-button"] (data-encore-id="buttonPrimary")
+       └── span.e-101111-button-primary__inner.encore-bright-accent-set
+             background: var(--background-base) → hardcoded #1ed760
+             color / svg fill: var(--text-base) → hardcoded #000
+   Rule 1b re-maps those tokens globally; these rules additionally pin
+   the reported surface itself, state-aware (rest = accent, hover/
+   focus = lighter, pressed = darker), so the button stays themed even
+   if the set class is ever renamed. Gating on the bright-accent-set
+   span means outline/secondary variants are never filled by accident. */
+button[data-testid="play-button"] [class*="encore-bright-accent-set"] {
+  background-color: var(--msc-accent) !important;
+  color:            var(--msc-on-accent) !important;
+}
+button[data-testid="play-button"]:hover [class*="encore-bright-accent-set"],
+button[data-testid="play-button"]:focus-visible [class*="encore-bright-accent-set"] {
+  background-color: var(--msc-accent-hover) !important;
+}
+button[data-testid="play-button"]:active [class*="encore-bright-accent-set"] {
+  background-color: var(--msc-accent-press) !important;
+}
+
+/* 7b. BOTTOM PLAYER-BAR PLAY/PAUSE (v1.4.2) — button[data-testid=
+   "control-button-playpause"] with data-encore-id="buttonPrimary",
+   but its inner span carries encore-INVERTED-light-set (white circle:
+   --background-base:#fff, --background-highlight:#f0f0f0,
+   --background-press:#c7c7c7, --text-base:#000) — which is why 1b and
+   7a (both gated on bright-accent-set) never touched it. Promote it to
+   an accent surface so every play affordance shares the theme accent,
+   state-aware like 7a. Scoped to the playpause testid only — other
+   inverted-light surfaces (white chips/buttons) are left alone. The
+   icon follows --msc-on-accent via the SECTION 1 compensation rule
+   and the explicit color pin below. */
+button[data-testid="control-button-playpause"] [class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent) !important;
+  color:            var(--msc-on-accent) !important;
+}
+button[data-testid="control-button-playpause"]:hover [class*="encore-inverted-light-set"],
+button[data-testid="control-button-playpause"]:focus-visible [class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent-hover) !important;
+}
+button[data-testid="control-button-playpause"]:active [class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent-press) !important;
+}
+
+/* ----------------------------------------------------------------
+   SECTION 2B — GLOBAL NAV BAR (v1.5.6, new top bar UI)
+   The current client renders its top bar as #global-nav-bar
+   (data-testid="global-nav-bar") holding back/forward, Home, the
+   search capsule and the right-side icon buttons. CLASSIC styling:
+   Spotify keeps its own bar surface; only text, icons and the
+   search focus ring follow the palette. (The glass themes put a
+   frosted surface on this bar in their SECTION 0B instead.)
+   ---------------------------------------------------------------- */
+#global-nav-bar,
+[data-testid="global-nav-bar"],
+header[data-testid="global-nav-bar"] {
+  --text-base:    var(--msc-text-primary) !important;
+  --text-subdued: var(--msc-text-muted) !important;
+}
+
+/* Search capsule & Home pill keep Spotify's surface; recolor content */
+#global-nav-bar form > div,
+[data-testid="global-nav-bar"] form > div,
+#global-nav-bar [data-testid="home-button"],
+[data-testid="global-nav-bar"] [data-testid="home-button"] {
+  color: var(--msc-text-primary) !important;
+}
+
+/* Raw <input> inside the capsule stays borderless; placeholder muted */
+[data-testid="search-input"],
+#global-nav-bar input[type="search"] {
+  color:           var(--msc-text-primary) !important;
+  --text-base:     var(--msc-text-primary) !important;
+}
+#global-nav-bar input[type="search"]::placeholder,
+[data-testid="search-input"]::placeholder {
+  color: var(--msc-text-muted) !important;
+}
+
+/* Accent focus ring on the single capsule while typing */
+#global-nav-bar form:focus-within > div,
+[data-testid="global-nav-bar"] form:focus-within > div {
+  border-color: var(--msc-accent) !important;
+  box-shadow: 0 0 0 1px var(--msc-accent) !important;
+}
+
+/* Back & Forward history buttons — icon recolor, accent on hover */
+[data-testid="top-bar-back-button"],
+[data-testid="top-bar-forward-button"],
+#global-nav-bar button[aria-label="Go back"],
+#global-nav-bar button[aria-label="Go forward"] {
+  color: var(--msc-text-primary) !important;
+}
+
+[data-testid="top-bar-back-button"]:hover:not(:disabled),
+[data-testid="top-bar-forward-button"]:hover:not(:disabled),
+#global-nav-bar button[aria-label="Go back"]:hover:not(:disabled),
+#global-nav-bar button[aria-label="Go forward"]:hover:not(:disabled) {
+  color: var(--msc-accent) !important;
+}
+
+/* Top-bar icon buttons (incl. the client injector's #msc-nav-tweaker-btn) */
+#global-nav-bar button svg,
+[data-testid="global-nav-bar"] button svg,
+#msc-nav-tweaker-btn svg {
+  color: var(--msc-text-muted) !important;
+  transition: color 0.15s ease, transform 0.15s ease !important;
+}
+
+#global-nav-bar button:hover svg,
+[data-testid="global-nav-bar"] button:hover svg,
+#msc-nav-tweaker-btn:hover svg {
+  color: var(--msc-accent) !important;
+  transform: scale(1.06);
+}
+
+/* ================================================================
+   SECTION 8 — ACTIVE FILTER PILLS & PANEL TABS (v1.5.6)
+   Ported from theme-adaptive-album.css. Pure accent mapping, no
+   glass — identical in every theme of the family.
+   ================================================================ */
+/* 1. Rounded Filter Chips (Library: Playlists/By you; Home: All/Music/Podcasts) */
+[role="checkbox"][aria-checked="true"],
+[role="radio"][aria-checked="true"],
+button[aria-checked="true"][data-encore-id="chip"],
+button[aria-pressed="true"][data-encore-id="chip"],
+[class*="encore-inverted-light-set"] {
+  background-color: var(--msc-accent) !important;
+  color: var(--msc-on-accent) !important;
+  border-radius: 9999px !important;
+  --text-base: var(--msc-on-accent) !important;
+  --text-subdued: var(--msc-on-accent) !important;
+}
+
+/* Force all child text & icons inside active chips / inverted pills to use --msc-on-accent */
+[role="checkbox"][aria-checked="true"] *,
+[role="radio"][aria-checked="true"] *,
+button[aria-checked="true"][data-encore-id="chip"] *,
+button[aria-pressed="true"][data-encore-id="chip"] *,
+[class*="encore-inverted-light-set"] *,
+[class*="encore-inverted-light-set"] [class*="encore-internal-color-text-base"],
+[class*="encore-inverted-light-set"] [data-encore-id="text"] {
+  color: var(--msc-on-accent) !important;
+  fill: var(--msc-on-accent) !important;
+  --text-base: var(--msc-on-accent) !important;
+}
+
+/* 2. Right Panel Tabs ("Queue" / "Recently played") — transparent with accent text & underline */
+[role="tab"][aria-selected="true"] {
+  background-color: transparent !important;
+  color: var(--msc-accent) !important;
+  --text-base: var(--msc-accent) !important;
+}
+
+[role="tab"][aria-selected="true"] * {
+  color: var(--msc-accent) !important;
+  --text-base: var(--msc-accent) !important;
+}
+
+[role="tab"][aria-selected="true"]::after {
+  background-color: var(--msc-accent) !important;
+}
+
+/* ================================================================
+   SECTION 9 — PREFERENCES, EQUALIZER & POSITIVE TOKENS (v1.5.6)
+   Ported from theme-adaptive-album.css. Neutral dark-mode surfaces
+   (white alpha) with palette accents — the CLASSIC look keeps no
+   frosted borders here.
+   ================================================================ */
+/* 1. Settings dropdowns (Equalizer Presets, Audio Quality, Language...) */
+[data-settings-row="true"] select,
+select[id^="desktop."] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: var(--msc-text-primary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  outline: none !important;
+}
+
+[data-settings-row="true"] select:hover,
+select[id^="desktop."]:hover,
+[data-settings-row="true"] select:focus,
+select[id^="desktop."]:focus {
+  background-color: rgba(255, 255, 255, 0.14) !important;
+  border-color: var(--msc-accent) !important;
+}
+
+/* Native <option> & <optgroup> popup list colors */
+[data-settings-row="true"] select option,
+[data-settings-row="true"] select optgroup,
+select[id^="desktop."] option,
+select[id^="desktop."] optgroup {
+  background-color: #121420 !important;
+  color: var(--msc-text-primary) !important;
+}
+
+/* 2. Equalizer card & perfectly aligned canvas + sliders */
+[data-settings-row="true"]:has(canvas[aria-label="Equalizer"]) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+}
+
+/* Keep the inner canvas positioning wrapper padding-free so dots & tracks align 1:1 */
+div:has(> canvas[aria-label="Equalizer"]) {
+  padding: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+canvas[aria-label="Equalizer"] {
+  border-radius: 8px !important;
+}
+
+/* 3. Equalizer frequency range sliders & thumbs
+   (the green EQ canvas lines themselves are recolored live by
+   content.js's Equalizer Canvas Color Override hook) */
+input[type="range"][aria-label^="Change decibels at"] {
+  accent-color: var(--msc-accent) !important;
+  cursor: pointer !important;
+}
+
+input[type="range"][aria-label^="Change decibels at"]::-webkit-slider-thumb {
+  background: var(--msc-accent) !important;
+  border: 2px solid var(--msc-text-primary) !important;
+  box-shadow: 0 0 8px var(--msc-accent) !important;
+}
+
+input[type="range"][aria-label^="Change decibels at"]::-webkit-slider-runnable-track {
+  background: rgba(255, 255, 255, 0.16) !important;
+  border-radius: 999px !important;
+}
+
+/* Equalizer labels (+12dB, -12dB, 60Hz..15KHz) */
+div:has(> canvas[aria-label="Equalizer"]) label {
+  color: var(--msc-text-muted) !important;
+}
+
+/* 4. Settings Secondary Buttons (e.g., Equalizer "Reset") & Toggle Switches */
+[data-settings-row="true"] [data-encore-id="buttonSecondary"],
+main [data-encore-id="buttonSecondary"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: var(--msc-text-primary) !important;
+  border-radius: 9999px !important;
+  transition: background 0.15s ease, border-color 0.15s ease !important;
+}
+
+[data-settings-row="true"] [data-encore-id="buttonSecondary"]:hover,
+main [data-encore-id="buttonSecondary"]:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: var(--msc-accent) !important;
+}
+
+/* Active toggle switches in Settings */
+[data-settings-row="true"] input[type="checkbox"]:checked + span,
+[data-settings-row="true"] [role="switch"][aria-checked="true"] {
+  background-color: var(--msc-accent) !important;
+}
+
+/* 5. Layout Density Preview Cards ("Dense" / "Default" / "Spacious") */
+[data-settings-row="true"] div:has(> svg[data-selected]) {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border-radius: 10px !important;
+  padding: 6px !important;
+  transition: border-color 0.15s ease, background 0.15s ease !important;
+}
+
+[data-settings-row="true"] div:has(> svg[data-selected="true"]) {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: var(--msc-accent) !important;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-settings-row="true"] svg[data-selected="false"] {
+  color: var(--msc-text-muted) !important;
+}
+
+[data-settings-row="true"] svg[data-selected="true"] {
+  color: var(--msc-accent) !important;
+}
+
+/* 6. Zoom Level Radio Track & Active Dot ("70%" ... "130%") */
+[aria-label="Select zoom level"] label[data-selected="true"] > div > div:first-child {
+  background-color: var(--msc-accent) !important;
+  border-color: var(--msc-accent) !important;
+  box-shadow: 0 0 8px var(--msc-accent) !important;
+}
+
+[aria-label="Select zoom level"] label[data-selected="true"] [data-encore-id="text"] {
+  color: var(--msc-accent) !important;
+  font-weight: 700 !important;
+}
+
+/* 7. Catch any remaining Spotify green tokens (toggles, indicators,
+   "Added" checkmarks, positive badges) everywhere */
+:root,
+[data-settings-row="true"] {
+  --essential-positive:  var(--msc-accent) !important;
+  --background-positive: var(--msc-accent) !important;
+  --text-positive:       var(--msc-accent) !important;
+}
