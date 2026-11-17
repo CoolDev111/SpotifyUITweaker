@@ -1,6 +1,6 @@
 # Spotify UI Tweaker
 
-Re-theme Spotify with custom CSS — **five glass themes**, a live palette
+Re-theme Spotify with custom CSS — **four glass themes**, a live palette
 editor, **named presets**, a raw-CSS editor and a selector diagnostics tool.
 Works as an MV3 extension in the **Chrome web player**, and in the
 **Spotify desktop client** (Windows & macOS) through the launcher packages
@@ -21,10 +21,14 @@ touches playback or DRM: the extension only changes how Spotify *looks*.
 
 | Path | What it is |
 |----|----|
-| `SpotifyUITweaker - Extension/` | The Chrome extension (Manifest V3). This is the folder you **Load unpacked** in Chrome. Full install guide in its [INSTALL.md](SpotifyUITweaker%20-%20Extension/INSTALL.md). |
-| `SpotifyUITweaker - Windows/` | Desktop-client launcher for Windows: `main.py` injects the extension into the Spotify client; `build.bat` builds a standalone `SpotifyUITweaker.exe`. |
-| `SpotifyUITweaker - Mac/` | Desktop-client launcher for macOS: the same cross-platform injector; `run.command` runs it from source, `build.command` builds a standalone `SpotifyUITweaker.app`. |
 | `.github/workflows/build.yml` | CI — builds the Windows exe + macOS app on every push; `v*` tags publish a GitHub Release with both builds. |
+| `images/` | Contains the images to showcase the ui for the client and extensions. |
+| `SpotifyUITweaker - Extension/` | The Chrome extension (Manifest V3). This is the folder you **Load unpacked** in Chrome. Full install guide in its [INSTALL.md](SpotifyUITweaker%20-%20Extension/INSTALL.md). |
+| `SpotifyUITweaker - Mac/` | Desktop-client launcher for macOS: the same cross-platform injector; `run.command` runs it from source, `build.command` builds a standalone `SpotifyUITweaker.app`. |
+| `SpotifyUITweaker - Windows/` | Desktop-client launcher for Windows: `main.py` injects the extension into the Spotify client; `build.bat` builds a standalone `SpotifyUITweaker.exe`. |
+| `.gitignore` | The file to ignore when building the launcher packages. |
+| `LICENSE` | The MIT license. |
+| `README.md` | This file. |
 
 Each launcher package also contains a **full copy of the extension assets**,
 so it works standalone — and even doubles as a loadable Chrome extension
@@ -65,14 +69,14 @@ themed consistently.
 
 ## Install — Chrome (web player)
 
-1. Unzip/clone, then open `chrome://extensions`.
+1. Unzip/clone, then open `chrome://extensions` in your browser (must be Chromium and have access to adding extensions).
 2. Enable **Developer mode** (top-right).
 3. **Load unpacked** → select the `SpotifyUITweaker - Extension/` folder — the one
    directly containing `manifest.json`.
 4. Open `https://open.spotify.com`, click the toolbar icon, pick a theme in
    the **Themes** tab.
 
-Edge/Brave work the same (`edge://extensions`, `brave://extensions`).
+Edge/Brave/etc work the same (`edge://extensions`, `brave://extensions`, etc.).
 Step-by-step details, updates-preserving-presets and troubleshooting:
 [`SpotifyUITweaker - Extension/INSTALL.md`](SpotifyUITweaker%20-%20Extension/INSTALL.md).
 
@@ -100,8 +104,8 @@ injects the whole extension.
 
 **Using it:** click the palette button left of the notification bell in
 Spotify's top bar, or press **Alt+C** (**Option+C** on macOS).
-**Ctrl+Shift+D / Alt+D** opens DevTools. Quitting the launcher closes
-Spotify — that's expected, the client must relaunch with the debug port.
+<br>**Ctrl+Shift+D / Alt+D** opens DevTools. (Curently not working!)
+<br>Quitting the launcher closes Spotify — that's expected, the client must relaunch with the debug port.
 
 Package details and troubleshooting:
 [`SpotifyUITweaker - Windows/README.md`](SpotifyUITweaker%20-%20Windows/README.md) ·
@@ -117,8 +121,8 @@ Package details and troubleshooting:
 - Push a version tag and both builds are published to a **GitHub Release**:
 
   ```bash
-  git tag v1.5.6
-  git push origin v1.5.6
+  git tag v(VER)
+  git push origin v(VER)
   ```
 
 - CI mac builds are **Apple-silicon only** (GitHub retired its Intel macOS
@@ -131,9 +135,11 @@ Package details and troubleshooting:
 | Windows | `build.bat` in `SpotifyUITweaker - Windows/` | `dist\SpotifyUITweaker.exe` |
 | macOS | `build.command` in `SpotifyUITweaker - Mac/` | `dist/SpotifyUITweaker.app` |
 
-CI and local builds are **unsigned**: macOS → right-click → **Open** (once),
-or `xattr -cr dist/SpotifyUITweaker.app`; Windows → SmartScreen
-**More info → Run anyway**.
+## (↓ THIS IS EXPECTED TO HAPPEN ↓)
+CI and local builds are **unsigned** and can produce a **false positive**.
+<br>To allow the app to run you must:
+<br>**macOS** → right-click → **Open** (once), or `xattr -cr dist/SpotifyUITweaker.app` in the terminal.
+<br>**Windows** → SmartScreen **More info → Run anyway**.
 
 ## Privacy, permissions & legal
 
@@ -152,6 +158,6 @@ or `xattr -cr dist/SpotifyUITweaker.app`; Windows → SmartScreen
 
 ---
 
-**Version 1.5.6** · Manifest V3 · for `https://open.spotify.com` ·
+**Version 1.5.7** · Manifest V3 · for `https://open.spotify.com` ·
 Python 3 + `websockets` for the desktop-client launcher ·
 [MIT licensed](LICENSE)
