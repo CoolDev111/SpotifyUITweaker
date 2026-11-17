@@ -14,9 +14,6 @@ import webbrowser
 
 import websockets
 
-# ---------------------------------------------------------------------------
-# Platform detection
-# ---------------------------------------------------------------------------
 IS_WINDOWS = os.name == "nt"
 IS_MAC = sys.platform == "darwin"
 
@@ -42,8 +39,6 @@ def _resolve_app_dir():
 APP_DIR = _resolve_app_dir()
 STORAGE_PATH = os.path.join(APP_DIR, "storage.json")
 
-# Standard Spotify desktop client install locations, per platform.
-# Running a portable/custom install? Add its path to this list.
 SPOTIFY_CANDIDATES = (
     [os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe")]
     if IS_WINDOWS
@@ -54,54 +49,9 @@ SPOTIFY_CANDIDATES = (
 )
 
 DEBUG_PORT = 9222
+RELEASE_PAGE = "https://github.com/CoolDev111/SpotifyUITweaker/releases"
 
-# Bump when launcher behaviour changes, so users can confirm which build
-# they are actually running (printed at startup).
-LAUNCHER_VERSION = "1.5.7+taskbar6"
-
-
-# ---------------------------------------------------------------------------
-# Windows taskbar identity (AppUserModelID)
-# ---------------------------------------------------------------------------
-# Goal: the launcher and the Spotify client share ONE taskbar button.
-#
-# How Windows decides grouping: every top-level window carries an
-# AppUserModelID (AUMID). The taskbar groups buttons by that ID, and a pinned
-# shortcut absorbs any running window whose AUMID matches its own.
-#
-# So the launcher:
-#   1. claims a fixed AUMID for its own process,
-#   2. writes a "SpotifyUITweaker.lnk" shortcut (Desktop + Start menu) that
-#      carries the SAME AUMID and Spotify's icon, then tries to pin it.
-#      The stamp ORDER matters: the .lnk is SAVED first, THEN
-#      IPropertyStore/System.AppUserModel.ID is written, then it is saved
-#      again - QueryInterface for IPropertyStore on a never-saved ShellLink
-#      answers E_NOINTERFACE on some systems. The result is verified by
-#      reloading the file and reading the property back.
-#   3. stamps every visible Spotify window with that AUMID via
-#      SHGetPropertyStoreForWindow (a window-level ID overrides Spotify's
-#      own process-level ID) and briefly toggles the window so the taskbar
-#      rebuilds its button under the new group.
-#   4. launches Spotify THROUGH a stamped shortcut (ShellExecuteEx on
-#      %LOCALAPPDATA%\SpotifyUITweaker\Spotify (Tweaker).lnk). A process
-#      started via a stamped shortcut inherits its AUMID whenever the app
-#      does not claim an explicit one itself - which merges Spotify into
-#      the pinned button even when cross-process window stamping is refused.
-#
-# Every step logs its own HRESULT (no silent except-swallowing), a startup
-# self-test rehearses the whole shortcut flow in %TEMP%, and the raw bytes of
-# every GUID handed to COM are compared against the SDK-header layout, so one
-# run pinpoints exactly where - and why - something breaks. If in-process
-# COM refuses the stamp, an out-of-proc powershell.exe helper builds +
-# stamps + verifies the shortcuts in a fresh COM apartment instead.
-#
-# COM notes: the shell property APIs need an initialized COM apartment on the
-# calling thread, and ctypes raises OSError (with .winerror) for any call
-# whose restype is ctypes.HRESULT and which returned a FAILED HRESULT. We
-# initialize COM on the main thread at import time, on the stamper thread at
-# startup, and - if in-proc COM misbehaves - fall back to an out-of-proc
-# powershell.exe helper that builds and stamps the shortcut in a fresh,
-# known-good COM apartment.
+LAUNCHER_VERSION = "1.5.8+taskbar6"
 
 LAUNCHER_AUMID = SPOTIFY_CANDIDATES[0] if IS_WINDOWS else "SpotifyUITweaker.Client"
 _SHORTCUT_NAME = "SpotifyUITweaker.lnk"
@@ -129,9 +79,6 @@ if IS_WINDOWS:
         _fields_ = [("fmtid", _GUID), ("pid", ctypes.c_ulong)]
 
     class _PROPVARIANT(ctypes.Structure):
-        # Minimal PROPVARIANT. For VT_LPWSTR the shell only reads vt (offset 0)
-        # and the pwszVal pointer (offset 8 on both x86 and x64); the rest of
-        # the union is padding.
         _fields_ = [
             ("vt", ctypes.c_ushort),
             ("reserved", ctypes.c_ubyte * 6),
@@ -154,9 +101,6 @@ if IS_WINDOWS:
     _SWP_HIDEWINDOW = 0x0080
     _SWP_TOGGLE = _SWP_NOSIZE | _SWP_NOMOVE | _SWP_NOZORDER | _SWP_NOACTIVATE
 
-    # Stable, SDK-documented IIDs/CLSID (the ONLY GUIDs hardcoded here are
-    # ones from the Windows SDK headers; the property key itself is resolved
-    # at runtime from its canonical name, see below).
     _IID_IPropertyStore_STR = "{886D8EEB-8CF2-444E-8D5F-B48F88E7B7A5}"
     _IID_IShellLinkW_STR = "{000214F9-0000-0000-C000-000000000046}"
     _IID_IPersistFile_STR = "{0000010B-0000-0000-C000-000000000046}"
@@ -164,17 +108,12 @@ if IS_WINDOWS:
     _FOLDERID_Desktop_STR = "{B4BFCC3A-DB2C-424C-B029-7FE99A87C641}"
 
     _IID_IShellItem2_STR = "{7E9FB11D-B6DB-4412-83AC-A32778CB5136}"
-    # Sanity canary for plain (non-shell) in-proc COM: the Global Interface
-    # Table CLSID is built into ole32 itself and registered on every Windows
-    # installation ever made (unlike optional MSXML components).
     _CLSID_GIT_STR = "{00000323-0000-0000-C000-000000000046}"
     _IID_IUnknown_STR = "{00000000-0000-0000-C000-000000000046}"
 
     _WNDENUMPROC = ctypes.WINFUNCTYPE(ctypes.c_int, ctypes.c_void_p, ctypes.c_void_p)
 
     class _SHELLEXECUTEINFOW(ctypes.Structure):
-        # ShellExecuteExW parameter block; layout matches shellapi.h
-        # (the hIcon/hMonitor union is carried by hIcon - we never pass one).
         _fields_ = [
             ("cbSize", ctypes.c_ulong), ("fMask", ctypes.c_ulong),
             ("hwnd", ctypes.c_void_p), ("lpVerb", ctypes.c_wchar_p),
@@ -186,15 +125,13 @@ if IS_WINDOWS:
             ("hProcess", ctypes.c_void_p),
         ]
 
-    _GPS_READWRITE = 0x2  # GETPROPERTYSTOREFLAGS: read/write property store
+    _GPS_READWRITE = 0x2
     _SEE_MASK_NOCLOSEPROCESS = 0x00000040
     _SEE_MASK_NOASYNC = 0x00001000
 
     _ole32.CLSIDFromString.argtypes = [ctypes.c_wchar_p, ctypes.POINTER(_GUID)]
     _ole32.CLSIDFromString.restype = ctypes.HRESULT
     _ole32.CoInitializeEx.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
-    # restype deliberately NOT ctypes.HRESULT: that would install a checker
-    # raising OSError on FAILED, and we want to read S_FALSE ourselves.
     _ole32.CoInitializeEx.restype = ctypes.c_long
     _ole32.CoCreateInstance.argtypes = [
         ctypes.POINTER(_GUID), ctypes.c_void_p, ctypes.c_ulong,
@@ -209,8 +146,6 @@ if IS_WINDOWS:
     _shell32.SHGetPropertyStoreForWindow.argtypes = [
         ctypes.c_void_p, ctypes.POINTER(_GUID), ctypes.POINTER(ctypes.c_void_p),
     ]
-    # restype deliberately NOT ctypes.HRESULT: that would raise on FAILED
-    # HRESULTs and hide WHICH call failed; we check the HRESULT ourselves.
     _shell32.SHGetPropertyStoreForWindow.restype = ctypes.c_long
     _shell32.SHGetKnownFolderPath.argtypes = [
         ctypes.POINTER(_GUID), ctypes.c_ulong, ctypes.c_void_p,
@@ -348,7 +283,6 @@ if IS_WINDOWS:
                     ctypes.byref(_guid(clsid_str)), None, _CLSCTX_INPROC_SERVER,
                     ctypes.byref(_guid(iid_str)), ctypes.byref(obj),
                 )
-                # restype=HRESULT means failures raise; reaching here = S_OK.
                 _com_release(obj)
                 parts.append(label + "=ok")
             except Exception as exc:
@@ -383,21 +317,12 @@ if IS_WINDOWS:
         _SHELLLINK_PS_OK = _qi("shelllinkQI+IPropertyStore", _CLSID_ShellLink_STR,
                                _IID_IPropertyStore_STR)
         _tblog("COM probe: " + "  ".join(parts))
-
-    # COM is per-thread and must be initialized before ANY shell property API
-    # is touched - do the main thread right here, at import time.
     _tblog("python " + sys.version.split()[0]
            + f" ({'64' if sys.maxsize > 2 ** 32 else '32'}-bit)")
     _COM_MAIN_STATUS = _com_try_init()
     _tblog("COM apartment (main thread): " + _COM_MAIN_STATUS)
     if _COM_MAIN_STATUS.startswith("ok"):
         _COM_INITED_THREADS.add(threading.get_ident())
-
-    # --- resolve System.AppUserModel.ID ---
-    # formatID/pid verified against the Windows SDK propkey.h:
-    #   DEFINE_PROPERTYKEY(PKEY_AppUserModel_ID,
-    #       0x9f4c2855,0x9f79,0x4b39,0xa8,0xd0,0xe1,0xd4,0x2d,0xe1,0xd5,0xf3, 5);
-    # (all System.AppUserModel.* properties share that fmtid with different pids)
     _PKEY_AppUserModel_ID = None
     try:
         _PKEY_AppUserModel_ID = _PROPERTYKEY(
@@ -409,12 +334,6 @@ if IS_WINDOWS:
         _IID_ISHELLITEM2 = _guid(_IID_IShellItem2_STR)
         _CLSID_SHELLLINK = _guid(_CLSID_ShellLink_STR)
         _tblog("AppUserModelID system ready (PKEY 9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3, pid 5)")
-
-        # Ground truth: log the raw 16 bytes every GUID actually carries and
-        # compare them against the SDK-header layout computed independently
-        # (little-endian Data1/Data2/Data3, then the 8 Data4 bytes). A single
-        # flipped byte anywhere would show up as MISMATCH here instead of
-        # surfacing later as a mysterious E_NOINTERFACE.
         for _name, (_want, _obj) in {
             "IID_IPropertyStore": ("eb8e6d88f28c4e448d5fb48f88e7b7a5", _IID_IPROPERTYSTORE),
             "IID_IShellLinkW": ("f914020000000000c000000000000046", _IID_ISHELLLINKW),
@@ -426,10 +345,6 @@ if IS_WINDOWS:
             _have = ctypes.string_at(ctypes.byref(_obj), 16).hex()
             _tblog("guid check " + _name + ": " + _have
                    + (" OK" if _have == _want else " MISMATCH! expected " + _want))
-
-        # Optional cross-check against the live property system. Purely
-        # informational: a failure here is logged and ignored, the SDK header
-        # value above is authoritative.
         try:
             _propsys.PSGetPropertyKeyFromName.argtypes = [
                 ctypes.c_wchar_p, ctypes.POINTER(_PROPERTYKEY),
@@ -457,8 +372,8 @@ if IS_WINDOWS:
             pass
 
     _AUMID_OK = _PKEY_AppUserModel_ID is not None
-    _SHELLLINK_PS_OK = False       # ShellLink QI(IPropertyStore) probe result
-    _WINDOW_STORE_OK = False       # SHGetPropertyStoreForWindow probe result
+    _SHELLLINK_PS_OK = False
+    _WINDOW_STORE_OK = False
     _ATOM_FALLBACK_ANNOUNCED = False
 
     def _set_process_aumid():
@@ -469,8 +384,6 @@ if IS_WINDOWS:
         """
         try:
             _shell32.SetCurrentProcessExplicitAppUserModelID(LAUNCHER_AUMID)
-            # restype=HRESULT: failures raise instead of returning, so
-            # reaching this line means S_OK.
             _tblog("process AUMID set to " + LAUNCHER_AUMID)
         except Exception as exc:
             _tblog("SetCurrentProcessExplicitAppUserModelID failed: " + _exc_hr(exc))
@@ -505,7 +418,7 @@ if IS_WINDOWS:
                             found.append(hwnd)
             except Exception:
                 pass
-            return 1  # keep enumerating
+            return 1
 
         _user32.EnumWindows(_WNDENUMPROC(_cb), None)
         return found
@@ -548,7 +461,7 @@ if IS_WINDOWS:
             cur = _user32.GetPropW(ctypes.c_void_p(hwnd),
                                    ctypes.c_wchar_p("AppUserModelID"))
             if cur is not None and (int(cur) & 0xFFFF) == at:
-                return True, LAUNCHER_AUMID, ""  # already stamped - no regroup
+                return True, LAUNCHER_AUMID, ""
             if not _user32.SetPropW(ctypes.c_void_p(hwnd),
                                     ctypes.c_wchar_p("AppUserModelID"),
                                     ctypes.c_void_p(at)):
@@ -570,7 +483,7 @@ if IS_WINDOWS:
         global _ATOM_FALLBACK_ANNOUNCED
         if not _AUMID_OK:
             return False, "", "property system unavailable"
-        _com_ensure_thread()  # idempotent; guarantees COM on the stamping thread
+        _com_ensure_thread()
         store = ctypes.c_void_p()
         try:
             hr = _shell32.SHGetPropertyStoreForWindow(
@@ -592,7 +505,7 @@ if IS_WINDOWS:
 
         prev = ""
         try:
-            t = _vtbl(store, 8)  # QI, AddRef, Release, GetCount, GetAt, GetValue, SetValue, Commit
+            t = _vtbl(store, 8)
             _GetValue = ctypes.WINFUNCTYPE(
                 ctypes.HRESULT, ctypes.c_void_p,
                 ctypes.POINTER(_PROPERTYKEY), ctypes.POINTER(_PROPVARIANT),
@@ -603,11 +516,6 @@ if IS_WINDOWS:
             )(t[6])
             _Commit = ctypes.WINFUNCTYPE(ctypes.HRESULT, ctypes.c_void_p)(t[7])
             _Release = ctypes.WINFUNCTYPE(ctypes.c_ulong, ctypes.c_void_p)(t[2])
-
-            # Diagnostics: whatever explicit ID the window had before
-            # (usually none - Spotify only sets a process-wide ID). A missing
-            # property may surface as a raised HRESULT error on some stores;
-            # that just means "no previous id", so swallow it.
             prev = ""
             try:
                 got = _PROPVARIANT()
@@ -619,7 +527,7 @@ if IS_WINDOWS:
                 pass
 
             if prev == LAUNCHER_AUMID:
-                return True, prev, ""  # already ours - nothing to do
+                return True, prev, ""
 
             pv = _PROPVARIANT()
             pv.vt = _VT_LPWSTR
@@ -669,7 +577,7 @@ if IS_WINDOWS:
         """Write System.AppUserModel.ID into an acquired IPropertyStore.
         Returns True when SetValue+Commit both returned S_OK."""
         try:
-            pt = _vtbl(ps, 8)  # QI, AddRef, Release, GetCount, GetAt, GetValue, SetValue, Commit
+            pt = _vtbl(ps, 8)
             _SetValue = ctypes.WINFUNCTYPE(
                 ctypes.c_long, ctypes.c_void_p,
                 ctypes.POINTER(_PROPERTYKEY), ctypes.POINTER(_PROPVARIANT),
@@ -728,7 +636,7 @@ if IS_WINDOWS:
             steps.append("item2.create=" + _hr_name(hr))
             if hr != 0 or not item:
                 return False
-            it = _vtbl(item, 9)  # IShellItem2: QI..Compare(7), GetPropertyStore(8)
+            it = _vtbl(item, 9)
             _GetPS = ctypes.WINFUNCTYPE(
                 ctypes.c_long, ctypes.c_void_p, ctypes.c_ulong,
                 ctypes.POINTER(_GUID), ctypes.POINTER(ctypes.c_void_p),
@@ -745,19 +653,6 @@ if IS_WINDOWS:
         finally:
             _com_release(ps)
             _com_release(item)
-
-    # --- COM-free fallbacks -------------------------------------------------
-    # On some machines (this user's included) the shell property-store COM
-    # stack is damaged: ShellLink QI(IPropertyStore), SHCreateItemFromParsingName
-    # and SHGetPropertyStoreForWindow ALL answer E_NOINTERFACE even though
-    # every GUID byte is provably correct. The helpers below achieve the same
-    # identity stamp without touching that stack at all:
-    #   * the .lnk gets a PropertyStoreDataBlock (signature 0xA0000009) spliced
-    #     straight into its bytes (MS-SHLLINK format), carrying
-    #     PKEY_AppUserModel_ID = {9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3} pid 5,
-    #     VT_LPWSTR - exactly what the shell would have written;
-    #   * Spotify's windows get SetPropW("AppUserModelID", <global atom>), the
-    #     raw window property Explorer reads when grouping taskbar buttons.
 
     _AUMID_FMTID_HEX = "55284c9f799f394ba8d0e1d42de1d5f3"
 
@@ -781,17 +676,17 @@ if IS_WINDOWS:
             return None
         flags, = struct.unpack_from("<I", data, 20)
         off = hdr_size
-        if flags & 0x01:  # HasShellItemIDList (2-byte size prefix)
+        if flags & 0x01:
             if off + 2 > len(data):
                 return None
             n, = struct.unpack_from("<H", data, off)
             off += 2 + n
-        if flags & 0x02:  # HasLinkInfo (size field counts itself)
+        if flags & 0x02:
             if off + 4 > len(data):
                 return None
             n, = struct.unpack_from("<I", data, off)
             off += n if n >= 4 else 4
-        for bit in (0x04, 0x08, 0x10, 0x20, 0x40):  # 5 optional strings
+        for bit in (0x04, 0x08, 0x10, 0x20, 0x40):
             if not (flags & bit):
                 continue
             if off + 2 > len(data):
@@ -808,13 +703,13 @@ if IS_WINDOWS:
         terminated by a zero-size sentinel rather than a count field."""
         wide = aumid.encode("utf-16-le") + b"\x00\x00"
         wide += b"\x00" * ((-len(wide)) % 4)
-        value = struct.pack("<I", len(aumid) + 1) + wide         # UnicodeString
-        typed = struct.pack("<HH", 31, 0) + value                 # Type, Padding, Value
-        prop_rest = struct.pack("<I", 5) + b"\x00" + typed         # ID, Reserved, TypedPropertyValue
+        value = struct.pack("<I", len(aumid) + 1) + wide
+        typed = struct.pack("<HH", 31, 0) + value
+        prop_rest = struct.pack("<I", 5) + b"\x00" + typed
         prop_value = struct.pack("<I", 4 + len(prop_rest)) + prop_rest
-        store_body = _fmtid_bytes() + prop_value + struct.pack("<I", 0)  # zero-size terminator
+        store_body = _fmtid_bytes() + prop_value + struct.pack("<I", 0)
         store = struct.pack("<I", 8 + len(store_body)) + struct.pack("<I", 0x53505331) + store_body
-        body = store + struct.pack("<I", 0)  # zero-size storage terminates the property store
+        body = store + struct.pack("<I", 0)
         return struct.pack("<II", 8 + len(body), 0xA0000009) + body
 
     def _decode_property_store(payload):
@@ -830,7 +725,7 @@ if IS_WINDOWS:
                 return ""
             version, = struct.unpack_from("<I", payload, p + 4)
             if version != 0x53505331:
-                return ""  # unknown store version - cannot trust the walk
+                return ""
             fmtid = bytes(payload[p + 8:p + 24])
             vp, end = p + 24, p + storage_size
             while vp + 4 <= end:
@@ -893,7 +788,7 @@ if IS_WINDOWS:
                 if size < 8 or p + size > len(data):
                     return False, "truncated extra-data block"
                 sig, = struct.unpack_from("<I", data, p + 4)
-                if sig != 0xA0000009:  # drop any existing identity block
+                if sig != 0xA0000009:
                     blocks.append(bytes(data[p:p + size]))
                 p += size
             if p + 4 > len(data) or any(data[p:p + 4]):
@@ -901,7 +796,7 @@ if IS_WINDOWS:
             new = bytearray(data[:off])
             new += b"".join(blocks)
             new += _lnk_property_store_block(aumid)
-            new += b"\x00\x00\x00\x00"  # terminal block
+            new += b"\x00\x00\x00\x00"
             got = _lnk_read_aumid_binary(bytes(new))
             if got != aumid:
                 return False, "read-back mismatch (" + repr(got) + ")"
@@ -934,7 +829,7 @@ if IS_WINDOWS:
             steps.append("verify.QI(IPersistFile)=" + _hr_name(hr))
             if hr != 0 or not pf:
                 return False, "QI(IPersistFile) failed", steps
-            ft = _vtbl(pf, 9)  # IPersistFile: GetClassID(3) IsDirty(4) Load(5) Save(6)
+            ft = _vtbl(pf, 9)
             _Load = ctypes.WINFUNCTYPE(
                 ctypes.c_long, ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_ulong,
             )(ft[5])
@@ -981,7 +876,7 @@ if IS_WINDOWS:
                 ctypes.byref(_CLSID_SHELLLINK), None, _CLSCTX_INPROC_SERVER,
                 ctypes.byref(_IID_ISHELLLINKW), ctypes.byref(link),
             )
-            lt = _vtbl(link, 21)  # SetWorkingDir(9) SetArguments(11) SetIconLocation(17) SetPath(20)
+            lt = _vtbl(link, 21)
             _QueryInterface = ctypes.WINFUNCTYPE(
                 ctypes.c_long, ctypes.c_void_p,
                 ctypes.POINTER(_GUID), ctypes.POINTER(ctypes.c_void_p),
@@ -1013,26 +908,19 @@ if IS_WINDOWS:
             ft = _vtbl(pf, 9)
             _Save = ctypes.WINFUNCTYPE(
                 ctypes.c_long, ctypes.c_void_p, ctypes.c_wchar_p, ctypes.c_int)(ft[6])
-
-            # 1) save FIRST - this unlocks the property store on the object
             hr = _Save(pf, ctypes.c_wchar_p(spec["path"]), 1)
             steps.append("save#1=" + _hr_name(hr))
             if hr != 0:
                 return res
             res["saved"] = True
-
-            # 2) stamp via the classic ShellLink QI route
             hr = _QueryInterface(link, ctypes.byref(_IID_IPROPERTYSTORE), ctypes.byref(ps))
             steps.append("QI(IPropertyStore)@saved-object=" + _hr_name(hr))
             if hr == 0 and ps:
                 res["stamped"] = _stamp_store(ps, spec["aumid"], steps, "stamp")
             if not res["stamped"]:
-                # 2b) independent acquisition route on the saved file
                 _com_release(ps)
                 ps = ctypes.c_void_p()
                 res["stamped"] = _stamp_store_shellitem2(spec["path"], spec["aumid"], steps)
-
-            # 3) save again so the stamp lands in the file, then verify
             if res["stamped"]:
                 hr = _Save(pf, ctypes.c_wchar_p(spec["path"]), 1)
                 steps.append("save#2=" + _hr_name(hr))
@@ -1127,8 +1015,6 @@ if IS_WINDOWS:
             target = sys.executable
             arguments = ""
         else:
-            # Running from source: target the console-less interpreter so the
-            # pinned item doesn't spawn a terminal window.
             target = sys.executable
             pythonw = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
             if os.path.exists(pythonw):
@@ -1179,9 +1065,6 @@ if IS_WINDOWS:
         verified_all = bool(saved) and all(verified.get(p, False) for p in saved)
 
         if saved and not verified_all:
-            # 1st fallback: splice the stamp into the saved .lnk bytes
-            # directly. No COM involved at all - immune to this machine's
-            # broken property system.
             _tblog("in-proc stamp incomplete; trying the COM-free binary stamp")
             for spec in specs:
                 if verified.get(spec["path"]) or not os.path.exists(spec["path"]):
@@ -1193,18 +1076,12 @@ if IS_WINDOWS:
             verified_all = bool(saved) and all(verified.get(p, False) for p in saved)
 
         if not verified_all and specs:
-            # 2nd fallback: rebuild + stamp + verify inside a fresh
-            # powershell.exe COM apartment; its C# interop asks for
-            # IPropertyStore through marshalled COM - an entirely separate
-            # code path from ctypes.
             _tblog("binary stamp insufficient; retrying out-of-proc via PowerShell")
             ps_saved, ps_ok = _stamp_links_via_powershell(specs, LAUNCHER_AUMID)
             if ps_ok:
                 saved = list(ps_saved)
                 verified_all = True
             else:
-                # PowerShell saved the files but could not stamp them either?
-                # Patch those bytes as the very last resort.
                 for p in ps_saved:
                     if p not in saved:
                         saved.append(p)
@@ -1225,13 +1102,6 @@ if IS_WINDOWS:
             _tblog("shortcut could not be created (in-proc COM, binary stamp and PowerShell all failed)")
         return (desktop_lnk if desktop_lnk in saved else None), newly_created
 
-    # Out-of-proc fallback: build + stamp + VERIFY the .lnk inside a fresh
-    # powershell.exe process (its own, freshly initialized COM apartment),
-    # used whenever in-proc stamping is refused in the launcher process. The
-    # helper communicates back via stdout: "SPTOK <path>" (saved+stamped),
-    # "SPTSAVED <path> :: <why>" (saved but the AUMID stamp failed),
-    # "SPTFAIL ..."/"SPTFATAL ..." and one "SPTVER <path> :: <id|NONE>" line
-    # per link reporting what the saved file ACTUALLY contains.
     _LNK_CSHARP = r"""
 using System;
 using System.Runtime.InteropServices;
@@ -1562,7 +1432,7 @@ foreach ($lnk in $spec.links) {
         sei.cbSize = ctypes.sizeof(_SHELLEXECUTEINFOW)
         sei.fMask = _SEE_MASK_NOCLOSEPROCESS | _SEE_MASK_NOASYNC
         sei.lpFile = path
-        sei.nShow = 1  # SW_SHOWNORMAL
+        sei.nShow = 1
         try:
             ok = bool(_shell32.ShellExecuteExW(ctypes.byref(sei)))
         except Exception as exc:
@@ -1654,7 +1524,7 @@ def _quiet(**extra):
     """Common subprocess kwargs; also hides console windows on Windows."""
     kwargs = {"stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
     if IS_WINDOWS:
-        kwargs["creationflags"] = 0x08000000  # CREATE_NO_WINDOW
+        kwargs["creationflags"] = 0x08000000
     kwargs.update(extra)
     return kwargs
 
@@ -1696,11 +1566,9 @@ def collect_extension_bundle():
 
 
 def extract_popup_parts(html_text):
-    # 1. Grab every <style>...</style> block from <head> (or anywhere in popup.html)
     styles = re.findall(r"<style[^>]*>([\s\S]*?)</style>", html_text, re.IGNORECASE)
     combined_css = "\n".join(styles)
 
-    # 2. Remap :root, html, and body selectors so they work inside the Shadow DOM
     combined_css = re.sub(
         r'(^|[\s,}])(?::root|html|body)(?=[\s,{:.#\[])',
         r'\1:host, #msc-popup-modal',
@@ -1708,7 +1576,6 @@ def extract_popup_parts(html_text):
         flags=re.MULTILINE
     )
 
-    # 3. Extract <body> content and strip <script> tags
     m = re.search(r"<body[^>]*>([\s\S]*?)</body>", html_text, re.IGNORECASE)
     body_inner = m.group(1) if m else html_text
     body_inner = re.sub(r"<script[\s\S]*?</script>", "", body_inner, flags=re.IGNORECASE)
@@ -1866,6 +1733,14 @@ def build_extension_payload(bundle):
         }};
 
         window.chrome.tabs = {{
+            create: (properties) => {{
+                const url = properties && properties.url;
+                if (typeof window.mscOpenRelease !== 'function') {{
+                    return Promise.reject(new Error('Launcher release opener is unavailable.'));
+                }}
+                window.mscOpenRelease(url || '');
+                return Promise.resolve({{ id: 2 }});
+            }},
             query: async () => [{{ id: 1, url: 'https://open.spotify.com' }}],
             sendMessage: (tabId, msg) => new Promise((resolve) => {{
                 let responded = false;
@@ -2089,7 +1964,6 @@ async def session_loop(ws_url, payload):
         await ws.send(json.dumps({"id": 1, "method": "Page.enable"}))
         await ws.send(json.dumps({"id": 2, "method": "Runtime.enable"}))
 
-        # Register both storage persistence and the Ctrl+Shift+I DevTools trigger
         await ws.send(json.dumps({
             "id": 3,
             "method": "Runtime.addBinding",
@@ -2100,15 +1974,20 @@ async def session_loop(ws_url, payload):
             "method": "Runtime.addBinding",
             "params": {"name": "mscOpenDevTools"}
         }))
-
         await ws.send(json.dumps({
             "id": 5,
+            "method": "Runtime.addBinding",
+            "params": {"name": "mscOpenRelease"}
+        }))
+
+        await ws.send(json.dumps({
+            "id": 6,
             "method": "Page.addScriptToEvaluateOnNewDocument",
             "params": {"source": payload}
         }))
 
         await ws.send(json.dumps({
-            "id": 6,
+            "id": 7,
             "method": "Runtime.evaluate",
             "params": {"expression": payload}
         }))
@@ -2125,6 +2004,15 @@ async def session_loop(ws_url, payload):
                         f.write(params.get("payload", "{}"))
                 elif name == "mscOpenDevTools":
                     launch_devtools_window()
+                elif name == "mscOpenRelease":
+                    if params.get("payload") != RELEASE_PAGE:
+                        print("[MSC] Ignored request to open an unapproved release URL.")
+                        continue
+                    try:
+                        if not webbrowser.open(RELEASE_PAGE, new=2):
+                            print("[MSC] Failed to open the release page in a browser.")
+                    except Exception as exc:
+                        print(f"[MSC] Failed to open the release page: {exc}")
 
 def main():
     print(f"[MSC] Launcher build {LAUNCHER_VERSION}")
