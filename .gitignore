@@ -10,3 +10,8 @@ SpotifyUITweaker - Mac/build/
 SpotifyUITweaker - Mac/dist/
 SpotifyUITweaker - Mac/*.spec
 SpotifyUITweaker-macOS-*.zip
+
+# python debug
+SpotifyUITweaker - Windows/taskbar-log.txt
+SpotifyUITweaker - Mac/taskbar-log.txt
+# ^ most likely isn't needed since Mac doesnt have a taskbar 

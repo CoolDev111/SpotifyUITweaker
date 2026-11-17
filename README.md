@@ -56,6 +56,13 @@ folder if you ever want the web-player version from the same place.
 All five themes share the same selector map, so new Spotify UI surfaces are
 themed consistently.
 
+## Showcase
+#### (↓ Client ↓)
+<img src="images/Client.png" alt="Theme Picture" width="700">
+
+#### (↓ Extension ↓)
+<img src="images/Extension.png" alt="Theme Picture" width="700">
+
 ## Install — Chrome (web player)
 
 1. Unzip/clone, then open `chrome://extensions`.

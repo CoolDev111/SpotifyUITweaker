@@ -32,6 +32,14 @@ const paletteNotice = document.getElementById("paletteNotice");
 const autoDerive = document.getElementById("autoDerive");
 const preview = document.getElementById("preview");
 const verBadge = document.getElementById("ver");
+const updateNotice = document.getElementById("updateNotice");
+
+/* Same GitHub repo main.py checks - this is the multi-platform monorepo
+   (Windows/Mac launcher + this extension), so one tag covers all of them. */
+const UPDATE_REPO = "CoolDev111/SpotifyUITweaker";
+const UPDATE_API = "https://api.github.com/repos/" + UPDATE_REPO;
+const UPDATE_PAGE = "https://github.com/" + UPDATE_REPO + "/releases";
+const UPDATE_CACHE_TTL_MS = 12 * 60 * 60 * 1000;
 
 /* ------------------------------------------------------------------ */
 /* Palette definition (must match SECTION 0 of default.css)            */
@@ -81,6 +89,25 @@ function escapeHtml(s) {
 
 function escapeRegExp(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/* Leading dotted-number run from a tag/version string, as an int array.
+   Ignores a "v" prefix and anything from "+" or other non-numeric text
+   onward, so "v1.6", "1.5.7+taskbar6" and "v1.4 Built App" parse to
+   [1,6], [1,5,7] and [1,4]. Mirrors _parse_version in main.py. */
+function parseVersion(tag) {
+  const m = String(tag || "").trim().match(/^v?(\d+(?:\.\d+)*)/);
+  return m ? m[1].split(".").map(Number) : null;
+}
+
+function versionGreater(a, b) {
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const x = i < a.length ? a[i] : -1;
+    const y = i < b.length ? b[i] : -1;
+    if (x !== y) return x > y;
+  }
+  return false;
 }
 
 function titleCase(s) {
@@ -535,6 +562,87 @@ function setUserPresets(arr) {
   });
 }
 
+function getUpdateCheckCache() {
+  return new Promise((resolve) => {
+    if (!extensionApiAvailable) { resolve(null); return; }
+    chrome.storage.local.get(["updateCheckCache"], (res) => {
+      resolve(res && res.updateCheckCache ? res.updateCheckCache : null);
+    });
+  });
+}
+
+function setUpdateCheckCache(cache) {
+  return new Promise((resolve) => {
+    if (!extensionApiAvailable) { resolve(); return; }
+    chrome.storage.local.set({ updateCheckCache: cache }, () => resolve());
+  });
+}
+
+/* Same two-step lookup as main.py's _latest_remote_version: a proper
+   Release first, falling back to bare tags (404) for a repo that only
+   pushes tags. Never throws - a failed/blocked fetch just means no
+   update notice this time, not a broken popup. */
+async function fetchLatestTag() {
+  try {
+    const res = await fetch(UPDATE_API + "/releases/latest", {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const v = parseVersion(data.tag_name);
+      if (v) return { version: v, tag: data.tag_name };
+    } else if (res.status !== 404) {
+      return null;
+    }
+  } catch (e) {
+    return null;
+  }
+  try {
+    const res = await fetch(UPDATE_API + "/tags", {
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!res.ok) return null;
+    const tags = await res.json();
+    let best = null;
+    for (const t of tags) {
+      const v = parseVersion(t.name);
+      if (v && (!best || versionGreater(v, best.version))) best = { version: v, tag: t.name };
+    }
+    return best;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function checkForUpdate() {
+  if (!extensionApiAvailable || !chrome.runtime.getManifest) return;
+  let current;
+  try {
+    current = parseVersion(chrome.runtime.getManifest().version);
+  } catch (e) {
+    return;
+  }
+  if (!current) return;
+
+  let cached = await getUpdateCheckCache();
+  const fresh = cached && typeof cached.ts === "number" && (Date.now() - cached.ts) < UPDATE_CACHE_TTL_MS;
+  if (!fresh) {
+    const found = await fetchLatestTag();
+    cached = found ? { version: found.version, tag: found.tag, ts: Date.now() } : { ts: Date.now() };
+    await setUpdateCheckCache(cached);
+  }
+  if (!cached || !cached.version || !versionGreater(cached.version, current)) return;
+
+  updateNotice.innerHTML =
+    "Update available: " + escapeHtml(cached.tag) +
+    ' — <a href="#" id="updateLink" style="color:var(--accent);font-weight:bold">View release</a>';
+  updateNotice.hidden = false;
+  document.getElementById("updateLink").addEventListener("click", (e) => {
+    e.preventDefault();
+    chrome.tabs.create({ url: UPDATE_PAGE });
+  });
+}
+
 async function refreshUserPresets() {
   userPresets = await getUserPresets();
   renderUserPresets();
@@ -927,3 +1035,4 @@ if (verBadge && extensionApiAvailable && chrome.runtime.getManifest) {
 }
 refreshUserPresets();
 loadShippedThemes();
+checkForUpdate();

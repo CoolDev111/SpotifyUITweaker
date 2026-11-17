@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Spotify UI Tweaker",
-    "version": "1.5.6",
+    "version": "1.5.7",
     "icons": {
         "16": "images/icon-16.png",
         "32": "images/icon-32.png",
@@ -9,7 +9,7 @@
     },
     "description": "Applies custom CSS to https://open.spotify.com with live updates and a selector diagnostics panel",
     "permissions": ["storage", "scripting", "activeTab"],
-    "host_permissions": ["https://open.spotify.com/*"],
+    "host_permissions": ["https://open.spotify.com/*", "https://api.github.com/*"],
     "action": {
         "default_popup": "popup.html",
         "default_title": "Edit Spotify CSS",
