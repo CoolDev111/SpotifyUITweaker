@@ -77,13 +77,14 @@ themed consistently.
    the **Themes** tab.
 
 Edge/Brave/etc work the same (`edge://extensions`, `brave://extensions`, etc.).
-Step-by-step details, updates-preserving-presets and troubleshooting:
+<br>Step-by-step details, updates-preserving-presets and troubleshooting:
 [`SpotifyUITweaker - Extension/INSTALL.md`](SpotifyUITweaker%20-%20Extension/INSTALL.md).
 
 ## Install — Spotify desktop client
 
 No Chrome needed — the launcher injects the **same themes and the same popup
-GUI** straight into the client. It closes Spotify, relaunches it with remote
+GUI** straight into the client. 
+<br>It closes Spotify, relaunches it with remote
 debugging on `127.0.0.1:9222`, attaches over the DevTools protocol and
 injects the whole extension.
 
@@ -135,11 +136,12 @@ Package details and troubleshooting:
 | Windows | `build.bat` in `SpotifyUITweaker - Windows/` | `dist\SpotifyUITweaker.exe` |
 | macOS | `build.command` in `SpotifyUITweaker - Mac/` | `dist/SpotifyUITweaker.app` |
 
-## (↓ THIS IS EXPECTED TO HAPPEN ↓)
+### **(↓ THIS IS EXPECTED TO HAPPEN ↓)**
 CI and local builds are **unsigned** and can produce a **false positive**.
 <br>To allow the app to run you must:
 <br>**macOS** → right-click → **Open** (once), or `xattr -cr dist/SpotifyUITweaker.app` in the terminal.
 <br>**Windows** → SmartScreen **More info → Run anyway**.
+### **(↑ THIS IS EXPECTED TO HAPPEN ↑)**
 
 ## Privacy, permissions & legal
 
