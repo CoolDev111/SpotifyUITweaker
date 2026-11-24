@@ -15,3 +15,7 @@ SpotifyUITweaker-macOS-*.zip
 SpotifyUITweaker - Windows/taskbar-log.txt
 SpotifyUITweaker - Mac/taskbar-log.txt
 # ^ most likely isn't needed since Mac doesnt have a taskbar 
+
+# packaged files from my use
+SpotifyUITweaker - Windows/storage.json
+SpotifyUITweaker - Mac/storage.json
