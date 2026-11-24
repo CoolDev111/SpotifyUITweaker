@@ -39,6 +39,22 @@ def _resolve_app_dir():
 APP_DIR = _resolve_app_dir()
 STORAGE_PATH = os.path.join(APP_DIR, "storage.json")
 
+# A launcher (or built .app) placed in /Applications or any other read-only
+# spot cannot hold storage.json — fall back to the proper per-user location
+# so saving a theme can never hard-crash the launcher.
+if not os.access(APP_DIR, os.W_OK):
+    _FALLBACK_DIR = os.path.join(
+        os.path.expanduser("~"), "Library", "Application Support", "SpotifyUITweaker"
+    )
+    try:
+        os.makedirs(_FALLBACK_DIR, exist_ok=True)
+        if os.access(_FALLBACK_DIR, os.W_OK):
+            STORAGE_PATH = os.path.join(_FALLBACK_DIR, "storage.json")
+    except OSError:
+        pass
+
+SESSION_LOCK_PATH = os.path.join(os.path.dirname(STORAGE_PATH), "launcher-session.lock")
+
 SPOTIFY_CANDIDATES = (
     [os.path.expandvars(r"%APPDATA%\Spotify\Spotify.exe")]
     if IS_WINDOWS
@@ -51,7 +67,7 @@ SPOTIFY_CANDIDATES = (
 DEBUG_PORT = 9222
 RELEASE_PAGE = "https://github.com/CoolDev111/SpotifyUITweaker/releases"
 
-LAUNCHER_VERSION = "1.5.8+taskbar6"
+LAUNCHER_VERSION = "1.5.10+macsafe2"
 
 LAUNCHER_AUMID = SPOTIFY_CANDIDATES[0] if IS_WINDOWS else "SpotifyUITweaker.Client"
 _SHORTCUT_NAME = "SpotifyUITweaker.lnk"
@@ -1538,9 +1554,126 @@ def kill_spotify():
         subprocess.run(["pkill", "-x", "Spotify"], **_quiet())
 
 
-atexit.register(kill_spotify)
+# ---------------------------------------------------------------------------
+# Session ownership — the fix for "loading a theme again nukes Spotify"
+# ---------------------------------------------------------------------------
+# Chromium allows ONE debugger client per Spotify page target. When a second
+# launcher attaches, the first one's socket is closed; when Spotify reloads
+# its page or dies, the socket closes too. The old build answered EVERY such
+# exit with kill_spotify() (atexit + finally), which murdered Spotify out
+# from under a newer launcher and turned any hiccup into a full crash that
+# took Spotify AND the launcher down together.
+#
+# The lock file records who owns the session so exit-time cleanup can tell
+# "I was replaced by a newer run" (stand down, touch nothing) apart from
+# "I am quitting for real" (close Spotify, as designed).
+
+def _read_lock_pid():
+    try:
+        with open(SESSION_LOCK_PATH, "r", encoding="utf-8") as f:
+            return int(f.read().strip())
+    except (OSError, ValueError):
+        return None
+
+
+def _pid_alive(pid):
+    if not pid or pid <= 0:
+        return False
+    try:
+        if IS_WINDOWS:
+            import ctypes as _ctypes
+            _k32 = _ctypes.WinDLL("kernel32", use_last_error=True)
+            handle = _k32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+            if not handle:
+                return False
+            try:
+                exit_code = _ctypes.c_ulong()
+                if _k32.GetExitCodeProcess(handle, _ctypes.byref(exit_code)):
+                    return exit_code.value == 259  # STILL_ACTIVE
+                return False
+            finally:
+                _k32.CloseHandle(handle)
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True  # exists but owned by another user
+    except OSError:
+        return False
+
+
+def claim_session_lock():
+    """Atomically take session ownership. Returns the previous owner's PID."""
+    previous = _read_lock_pid()
+    tmp_path = f"{SESSION_LOCK_PATH}.{os.getpid()}.tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(str(os.getpid()))
+        os.replace(tmp_path, SESSION_LOCK_PATH)
+    except OSError:
+        previous = None  # unwritable dir; degrade to best-effort single instance
+    return previous
+
+
+def owns_session():
+    return _read_lock_pid() == os.getpid()
+
+
+_session_started = False  # True once this run has spawned or attached to Spotify
+
+
+def _shutdown_kill_spotify():
+    """Keeps the designed "quitting the launcher closes Spotify" behaviour,
+    but ONLY while this run still owns the session. A launcher that was
+    replaced by a newer run (or that hit an unexpected error after losing
+    ownership) exits without touching Spotify."""
+    if _session_started and owns_session():
+        kill_spotify()
+
+
+atexit.register(_shutdown_kill_spotify)
 signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
 signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+
+
+# ---------------------------------------------------------------------------
+# macOS GPU-safety CSS sanitizer
+# ---------------------------------------------------------------------------
+# Spotify's macOS client composites through Metal/ANGLE, and the glass
+# themes' heavy backdrop-filter blur + background-attachment: fixed combo
+# is a known GPU-process killer on that path: the client exits the instant
+# the theme style is applied. Windows renders the exact same CSS fine, so
+# the rewrite only engages when the launcher itself runs on macOS.
+_MAC_BLUR_CAP_PX = 8
+
+
+def _sanitize_css_for_macos(css):
+    """Neutralize GPU-crash-prone declarations for the macOS Metal path."""
+    if not css:
+        return css
+    # 1) backdrop-filter (incl. -webkit- variant): force off. Keeping
+    #    !important strength so Spotify's own glass rules cannot re-enable
+    #    it later. Also disables any @supports conditions using it.
+    css = re.sub(
+        r"(?i)(-webkit-backdrop-filter|backdrop-filter)\s*:[^;}]*",
+        lambda m: f"{m.group(1)}: none !important",
+        css,
+    )
+    # 2) Cap remaining blur() radii (plain filter: blur and custom
+    #    properties) so large surfaces cannot allocate exploding textures.
+    css = re.sub(
+        r"(?i)blur\(\s*([0-9]+(?:\.[0-9]+)?)px\s*\)",
+        lambda m: f"blur({min(float(m.group(1)), _MAC_BLUR_CAP_PX):g}px)",
+        css,
+    )
+    # 3) Fixed backgrounds force full-surface re-composites while scrolling.
+    css = re.sub(
+        r"(?i)background-attachment\s*:\s*fixed(\s*!important)?",
+        lambda m: "background-attachment: scroll" + (m.group(1) or ""),
+        css,
+    )
+    return css
 
 
 def collect_extension_bundle():
@@ -1552,7 +1685,10 @@ def collect_extension_bundle():
                 full_path = os.path.join(root, fname)
                 rel_path = os.path.relpath(full_path, BUNDLE_DIR).replace("\\", "/")
                 with open(full_path, "r", encoding="utf-8") as f:
-                    files[rel_path] = f.read()
+                    text = f.read()
+                if fname.endswith(".css") and IS_MAC:
+                    text = _sanitize_css_for_macos(text)
+                files[rel_path] = text
 
     storage = {}
     if os.path.exists(STORAGE_PATH):
@@ -1647,7 +1783,7 @@ def build_extension_payload(bundle):
     serialized_popup_html = json.dumps(popup_html_body)
     serialized_popup_css = json.dumps(popup_css)
 
-    ver = "1.5.7"
+    ver = "1.5.10"
 
     return f"""
     (() => {{
@@ -1959,7 +2095,7 @@ def launch_devtools_window():
     except Exception as e:
         print(f"[MSC] Failed to launch DevTools: {e}")
 
-async def session_loop(ws_url, payload):
+async def session_loop(ws_url, payload, state):
     async with websockets.connect(ws_url, max_size=None) as ws:
         await ws.send(json.dumps({"id": 1, "method": "Page.enable"}))
         await ws.send(json.dumps({"id": 2, "method": "Runtime.enable"}))
@@ -1995,24 +2131,82 @@ async def session_loop(ws_url, payload):
         print("[MSC] Extension injected! Click the palette icon left of the notification bell (or press Alt+C).")
 
         async for raw_msg in ws:
-            msg = json.loads(raw_msg)
-            if msg.get("method") == "Runtime.bindingCalled":
-                params = msg.get("params", {})
-                name = params.get("name")
-                if name == "mscPersistStorage":
-                    with open(STORAGE_PATH, "w", encoding="utf-8") as f:
-                        f.write(params.get("payload", "{}"))
-                elif name == "mscOpenDevTools":
-                    launch_devtools_window()
-                elif name == "mscOpenRelease":
-                    if params.get("payload") != RELEASE_PAGE:
-                        print("[MSC] Ignored request to open an unapproved release URL.")
-                        continue
-                    try:
-                        if not webbrowser.open(RELEASE_PAGE, new=2):
-                            print("[MSC] Failed to open the release page in a browser.")
-                    except Exception as exc:
-                        print(f"[MSC] Failed to open the release page: {exc}")
+            try:
+                msg = json.loads(raw_msg)
+                if msg.get("method") == "Runtime.bindingCalled":
+                    params = msg.get("params", {})
+                    name = params.get("name")
+                    if name == "mscPersistStorage":
+                        incoming = params.get("payload", "{}")
+                        # Timeline of what is on disk — the crash-revert in
+                        # main() uses this to undo a save that killed Spotify.
+                        state.setdefault("disk", []).append((time.time(), incoming))
+                        state["last_write_at"] = time.time()
+                        try:
+                            with open(STORAGE_PATH, "w", encoding="utf-8") as f:
+                                f.write(incoming)
+                        except OSError as exc:
+                            print(f"[MSC] Could not save storage.json ({exc!r}). The Tweaker keeps working; settings just will not persist.")
+                    elif name == "mscOpenDevTools":
+                        state["inspector"] = True
+                        launch_devtools_window()
+                    elif name == "mscOpenRelease":
+                        if params.get("payload") != RELEASE_PAGE:
+                            print("[MSC] Ignored request to open an unapproved release URL.")
+                            continue
+                        try:
+                            if not webbrowser.open(RELEASE_PAGE, new=2):
+                                print("[MSC] Failed to open the release page in a browser.")
+                        except Exception as exc:
+                            print(f"[MSC] Failed to open the release page: {exc}")
+            except Exception as exc:
+                # A single malformed/failed message must never kill the session.
+                print(f"[MSC] Session message error (continuing): {exc!r}")
+
+def _read_storage_seed():
+    try:
+        with open(STORAGE_PATH, "r", encoding="utf-8") as f:
+            return f.read()
+    except OSError:
+        return None
+
+
+CRASH_REVERT_WINDOW_S = 8.0
+
+
+def _last_survived_storage(state):
+    """Newest on-disk payload that stayed applied for a while while Spotify
+    kept running — i.e. proven not to crash the client. None = no file."""
+    disk = state.get("disk") or []
+    now = time.time()
+    for i in range(len(disk) - 1, -1, -1):
+        applied_at = disk[i][0]
+        end_at = disk[i + 1][0] if i + 1 < len(disk) else now
+        if end_at - applied_at >= CRASH_REVERT_WINDOW_S:
+            return disk[i][1]
+    return None
+
+
+def _revert_storage_if_crash(state):
+    """If Spotify died seconds after a settings save, undo that save.
+    Without this, one GPU-crashing theme would sit in storage.json and
+    crash-loop every future launch."""
+    last_write_at = state.get("last_write_at", 0.0)
+    if not last_write_at or (time.time() - last_write_at) > 6.0:
+        return
+    rollback = _last_survived_storage(state)
+    try:
+        if rollback is None:
+            if os.path.exists(STORAGE_PATH):
+                os.remove(STORAGE_PATH)
+                print("[MSC] Spotify died right after a settings save — removed the save so the next launch boots safe.")
+        else:
+            with open(STORAGE_PATH, "w", encoding="utf-8") as f:
+                f.write(rollback)
+            print("[MSC] Spotify died right after a settings save — rolled back to the last stable save so the next launch boots safe.")
+    except OSError as exc:
+        print(f"[MSC] Could not roll back the last settings save ({exc!r}).")
+
 
 def main():
     print(f"[MSC] Launcher build {LAUNCHER_VERSION}")
@@ -2027,22 +2221,85 @@ def main():
             print(f"[MSC] [taskbar] watchdog failed to start: {exc}")
 
     bundle = collect_extension_bundle()
+    payload = build_extension_payload(bundle)
+
+    claim_session_lock()
+
+    global _session_started
+    _session_started = True
+
     if not is_debug_port_open():
         restart_spotify_with_debug()
     else:
         print("[MSC] Spotify already running with DevTools enabled, attaching directly...")
 
-    ws_url = wait_for_spotify_target()
-    payload = build_extension_payload(bundle)
+    # Seed the crash-revert timeline with what was on disk at boot. The seed
+    # is back-dated past the revert window on purpose: the boot content was
+    # already rendered by Spotify before this session saved anything, so it
+    # counts as proven-stable no matter how fast the first theme click is.
+    state = {
+        "inspector": False,
+        "disk": [(time.time() - (CRASH_REVERT_WINDOW_S + 1.0), _read_storage_seed())],
+        "last_write_at": 0.0,
+    }
 
-    try:
-        asyncio.run(session_loop(ws_url, payload))
-    except websockets.exceptions.ConnectionClosed:
-        print("[MSC] Spotify closed. Exiting cleanly.")
+    drops = 0
+    while True:
+        try:
+            ws_url = wait_for_spotify_target()
+        except TimeoutError as exc:
+            if not is_debug_port_open():
+                print(f"[MSC] {exc}")
+                print("[MSC] Spotify closed. Exiting cleanly.")
+                return
+            drops += 1
+            if drops >= 6:
+                print("[MSC] Spotify never exposed its debugger. Leaving Spotify alone — re-run the launcher to attach.")
+                return
+            print(f"[MSC] Waiting for Spotify's debugger target (attempt {drops}/6)...")
+            time.sleep(1.0)
+            continue
+
+        attached_at = time.time()
+        try:
+            asyncio.run(session_loop(ws_url, payload, state))
+        except websockets.exceptions.ConnectionClosed:
+            pass
+        except Exception as exc:
+            print(f"[MSC] Debugger session error: {exc!r}")
+
+        # The debugger socket closed (or errored). Work out WHY before doing
+        # anything drastic — nuking Spotify here is what killed re-injection.
+        if not owns_session():
+            print("[MSC] A newer launcher instance took over the session. Exiting without closing Spotify.")
+            return
+        if not is_debug_port_open():
+            _revert_storage_if_crash(state)
+            print("[MSC] Spotify closed. Exiting cleanly.")
+            return
+        if state.get("inspector"):
+            # We handed the debugger to the standalone DevTools window; do not
+            # fight it for the socket. Stand by until Spotify itself closes.
+            print("[MSC] DevTools window owns the debugger for now — standing by. (Re-run the launcher to take the session back.)")
+            while is_debug_port_open():
+                time.sleep(1.0)
+            print("[MSC] Spotify closed. Exiting cleanly.")
+            return
+        if time.time() - attached_at >= 10.0:
+            # We held a healthy session; reset the failure budget.
+            drops = 0
+            state["inspector"] = False
+        else:
+            drops += 1
+        if drops >= 4:
+            print("[MSC] Debugger connection keeps dropping. Leaving Spotify running — re-run the launcher to re-attach.")
+            return
+        print(f"[MSC] Debugger connection dropped but Spotify is still running — re-attaching (attempt {drops + 1}/4)...")
+        time.sleep(1.5)
 
 
 if __name__ == "__main__":
     try:
         main()
     finally:
-        kill_spotify()
+        _shutdown_kill_spotify()
