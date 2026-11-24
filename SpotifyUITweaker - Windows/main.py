@@ -67,7 +67,7 @@ SPOTIFY_CANDIDATES = (
 DEBUG_PORT = 9222
 RELEASE_PAGE = "https://github.com/CoolDev111/SpotifyUITweaker/releases"
 
-LAUNCHER_VERSION = "1.5.10+macsafe2"
+LAUNCHER_VERSION = "1.5.8"
 
 LAUNCHER_AUMID = SPOTIFY_CANDIDATES[0] if IS_WINDOWS else "SpotifyUITweaker.Client"
 _SHORTCUT_NAME = "SpotifyUITweaker.lnk"
@@ -1783,7 +1783,7 @@ def build_extension_payload(bundle):
     serialized_popup_html = json.dumps(popup_html_body)
     serialized_popup_css = json.dumps(popup_css)
 
-    ver = "1.5.10"
+    ver = "1.5.8"
 
     return f"""
     (() => {{

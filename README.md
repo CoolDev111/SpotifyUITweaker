@@ -160,6 +160,6 @@ CI and local builds are **unsigned** and can produce a **false positive**.
 
 ---
 
-**Version 1.5.7** · Manifest V3 · for `https://open.spotify.com` ·
+**Version 1.5.8** · Manifest V3 · for `https://open.spotify.com` ·
 Python 3 + `websockets` for the desktop-client launcher ·
 [MIT licensed](LICENSE)
